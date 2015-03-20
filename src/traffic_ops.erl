@@ -9,66 +9,74 @@
 -type sim_params() :: emas:sim_params().
 -type solution() :: emas:solution(binary()).
 
-%% @doc Generates a random solution, as a vector of numbers in the range [-50, 50].
+
+%% @doc Generates a random solution, a list of 4-bit tuples
 -spec solution(sim_params()) -> solution().
-solution(SP) ->
-    S = [-50 + random:uniform() * 100 || _ <- lists:seq(1, SP#sim_params.problem_size)],
+solution(#sim_params{problem_size = ProblemSize}) ->
+    %% TODO change it to binary syntax
+    S = [{random_bit(), random_bit(), random_bit(), random_bit()}
+         || _ <- lists:seq(1, ProblemSize)],
     erlang:term_to_binary(S).
 
-%% @doc Evaluates a given solution by computing the Rastrigin function.
+
+%% @doc Evaluates a given solution and returns a fitness value
 -spec evaluation(solution(), sim_params()) -> float().
-evaluation(B, _SP) ->
-    S = erlang:binary_to_term(B),
-    - lists:foldl(fun(X, Sum) -> Sum + 10 + X*X - 10*math:cos(2*math:pi()*X) end, 0.0, S).
+evaluation(_B, _SP) ->
+    todo.
 
-%% @doc Continuously recombines every pair of features for the given pair of solutions.
+
+%% @doc Crossover recombination in a random point
 -spec recombination(solution(), solution(), sim_params()) -> {solution(), solution()}.
-recombination(B1, B2, _SP) ->
-    S1 = erlang:binary_to_term(B1),
-    S2 = erlang:binary_to_term(B2),
-    {S3, S4} = lists:unzip([recombination_features(F1, F2) || {F1, F2} <- lists:zip(S1,S2)]),
-    {erlang:term_to_binary(S3), erlang:term_to_binary(S4)}.
+recombination(B1, B2, #sim_params{problem_size = ProblemSize}) ->
+    {S1, S2} = {erlang:binary_to_term(B1), erlang:binary_to_term(B2)},
+    CutPoint = random:uniform(ProblemSize),
+    {S1a, S1b} = lists:split(CutPoint, S1),
+    {S2a, S2b} = lists:split(CutPoint, S2),
+    {erlang:term_to_binary(S1a ++ S2b), erlang:term_to_binary(S2a ++ S1b)}.
 
-%% @doc Mutates the features at random indices
+
+%% @doc Mutates (flips) genes at random indexes
 -spec mutation(solution(), sim_params()) -> solution().
-mutation(B, SP) ->
-    S = erlang:binary_to_term(B),
-    NrGenesMutated = mas_misc_util:average_number(SP#sim_params.mutation_rate, S),
-    Indexes = [random:uniform(length(S)) || _ <- lists:seq(1, NrGenesMutated)], % indices may be duplicated
-    Mut = mutate_genes(S, lists:usort(Indexes), 1, [], SP), % usort removes duplicates
-    erlang:term_to_binary(Mut).
+mutation(B, SP = #sim_params{mutation_rate = MutRate}) ->
+    Solution = erlang:binary_to_term(B),
+%%     Mutated = [case random:uniform() < MutRate of
+%%                    true -> flip_gene(Gene);
+%%                    false -> Gene
+%%                end || Gene <- Solution],
+    NrGenesMutated = mas_misc_util:average_number(MutRate, Solution),
+    Indexes = [random:uniform(length(Solution)) || _ <- lists:seq(1, NrGenesMutated)], % indexes may be duplicated
+    Mutated = mutate_genes(Solution, lists:usort(Indexes), 1, [], SP), % usort removes duplicates
+    erlang:term_to_binary(Mutated).
+
 
 -spec config() -> term().
 config() ->
-    undefined.
+    input_data:load_data().
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
 
-%% @doc Chooses a random value between the two initial features.
--spec recombination_features(float(), float()) -> {float(), float()}.
-recombination_features(F1, F2) ->
-    A = erlang:min(F1, F2),
-    B = (erlang:max(F1, F2) - erlang:min(F1, F2)),
-    {A + random:uniform() * B,A + random:uniform() * B}.
+-spec random_bit() -> 0 | 1.
+random_bit() ->
+    random:uniform(2) - 1.
 
-%% @doc Actually mutates a given feature.
+
+%% @doc Flips genes under given indexes
 mutate_genes(RestOfSolution, [], _, Acc, _SP) ->
     lists:reverse(Acc, RestOfSolution);
+
 mutate_genes([], [_|_], _, _, _) ->
     erlang:error(tooManyIndexes);
+
 mutate_genes([Gene|Solution], [I|Indexes], I, Acc, SP) ->
-    mutate_genes(Solution, Indexes, I+1, [mutate_feature(Gene, SP)|Acc], SP);
+    mutate_genes(Solution, Indexes, I+1, [flip_gene(Gene) | Acc], SP);
+
 mutate_genes([Gene|Solution], [I|Indexes], Inc, Acc, SP) ->
     mutate_genes(Solution, [I|Indexes], Inc+1, [Gene|Acc], SP).
 
-%% @doc Actually mutates a given feature.
--spec mutate_feature(float(), sim_params()) -> float().
-mutate_feature(F, SP) ->
-    Range = SP#sim_params.mutation_range * case random:uniform() of
-                                         X when X < 0.2 -> 5.0;
-                                         X when X < 0.4 -> 0.2;
-                                         _ -> 1.0
-                                     end,
-    F + Range * math:tan(math:pi()*(random:uniform() - 0.5)).
+
+%% @doc Flips the whole gene
+-spec flip_gene(tuple()) -> tuple().
+flip_gene({B1, B2, B3, B4}) ->
+    {1 - B1, 1 - B2, 1 - B3, 1 - B4}.
