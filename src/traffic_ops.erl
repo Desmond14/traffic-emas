@@ -21,8 +21,9 @@ solution(#sim_params{problem_size = ProblemSize}) ->
 
 %% @doc Evaluates a given solution and returns a fitness value
 -spec evaluation(solution(), sim_params()) -> float().
-evaluation(_B, _SP) ->
-    todo.
+evaluation(Binary, #sim_params{extra = Data}) ->
+    Solution = erlang:binary_to_term(Binary),
+    evaluation:evaluate_solution(Solution, Data).
 
 
 %% @doc Crossover recombination in a random point
@@ -53,9 +54,9 @@ mutation(B, SP = #sim_params{mutation_rate = MutRate}) ->
 config() ->
     input_data:load_data().
 
-%% ====================================================================
+%% =============================================================================
 %% Internal functions
-%% ====================================================================
+%% =============================================================================
 
 -spec random_bit() -> 0 | 1.
 random_bit() ->
