@@ -6,7 +6,7 @@
 -type data() :: dict:dict().
 -type density() :: dense | normal | sparse.
 
--define(TOTAL_CARS, 200).
+-define(TOTAL_CARS, 40).
 
 -spec load_data() -> data().
 load_data() ->
