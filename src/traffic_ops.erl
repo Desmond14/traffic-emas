@@ -13,7 +13,6 @@
 %% @doc Generates a random solution, a list of 4-bit tuples
 -spec solution(sim_params()) -> solution().
 solution(#sim_params{problem_size = ProblemSize}) ->
-    %% TODO change it to binary syntax
     S = [{random_bit(), random_bit(), random_bit(), random_bit()}
          || _ <- lists:seq(1, ProblemSize)],
     erlang:term_to_binary(S).
@@ -23,7 +22,8 @@ solution(#sim_params{problem_size = ProblemSize}) ->
 -spec evaluation(solution(), sim_params()) -> float().
 evaluation(Binary, #sim_params{extra = Data}) ->
     Solution = erlang:binary_to_term(Binary),
-    evaluation:evaluate_solution(Solution, Data).
+    Fitness = evaluation:evaluate_solution(Solution, Data),
+    float(Fitness).
 
 
 %% @doc Crossover recombination in a random point
@@ -40,16 +40,22 @@ recombination(B1, B2, #sim_params{problem_size = ProblemSize}) ->
 -spec mutation(solution(), sim_params()) -> solution().
 mutation(B, SP = #sim_params{mutation_rate = MutRate}) ->
     Solution = erlang:binary_to_term(B),
-%%     Mutated = [case random:uniform() < MutRate of
-%%                    true -> flip_gene(Gene);
-%%                    false -> Gene
-%%                end || Gene <- Solution],
+    %%     Mutated = [case random:uniform() < MutRate of
+    %%                    true -> flip_gene(Gene);
+    %%                    false -> Gene
+    %%                end || Gene <- Solution],
     NrGenesMutated = mas_misc_util:average_number(MutRate, Solution),
-    Indexes = [random:uniform(length(Solution)) || _ <- lists:seq(1, NrGenesMutated)], % indexes may be duplicated
-    Mutated = mutate_genes(Solution, lists:usort(Indexes), 1, [], SP), % usort removes duplicates
+    Indexes = [random:uniform(length(Solution))
+               || _ <- lists:seq(1, NrGenesMutated)], % indexes may be duplicated
+    Mutated = mutate_genes(Solution,
+                           lists:usort(Indexes),
+                           1,
+                           [],
+                           SP), % usort removes duplicates
     erlang:term_to_binary(Mutated).
 
 
+%% @doc Loads the data that will be optimized
 -spec config() -> term().
 config() ->
     input_data:load_data().
