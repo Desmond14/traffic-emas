@@ -13,13 +13,13 @@
 %% @doc Generates a random solution, a list of 4-bit tuples
 -spec solution(sim_params()) -> solution().
 solution(#sim_params{problem_size = ProblemSize}) ->
-    crypto:rand_bytes(ProblemSize div 2).
+    crypto:rand_bytes(ProblemSize).
 
 
 %% @doc Evaluates a given solution and returns a fitness value
 -spec evaluation(solution(), sim_params()) -> float().
 evaluation(Binary, #sim_params{extra = Data}) ->
-    Solution = [{B1,B2,B3,B4} || <<B1:1,B2:1,B3:1,B4:1>> <= Binary],
+    Solution = [{B1, B2, B3, B4} || <<B1:1, B2:1, B3:1, B4:1, _:4>> <= Binary],
     Fitness = evaluation:evaluate_solution(Solution, Data),
     float(Fitness).
 
@@ -27,7 +27,7 @@ evaluation(Binary, #sim_params{extra = Data}) ->
 %% @doc Crossover recombination in a random point
 -spec recombination(solution(), solution(), sim_params()) -> {solution(), solution()}.
 recombination(Sol1, Sol2, #sim_params{problem_size = ProblemSize}) ->
-    CutPoint = random:uniform(ProblemSize div 2),
+    CutPoint = random:uniform(ProblemSize),
     <<S1a:CutPoint/binary, S1b/binary>> = Sol1,
     <<S2a:CutPoint/binary, S2b/binary>> = Sol2,
     {<<S1a/binary, S2b/binary>>, <<S2a/binary, S1b/binary>>}.
