@@ -27,8 +27,17 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
-    ResetMoves = dict:map(fun(_K, _V) -> false end, NewData),
+    EraseCars = erase_cars(NewData),
+    ResetMoves = dict:map(fun(_K, _V) -> false end, EraseCars),
     time_loop(Solution, ResetMoves, Result + Moves).
+
+
+%% @doc Removes cars which have already passed the crossing from the system
+-spec erase_cars(data()) -> data().
+erase_cars(DataDict) ->
+    dict:filter(fun({X, _Lane, _Dest}, _Moved) ->
+                        X < 1
+                end, DataDict).
 
 
 %% @doc Launches the loop that tries to move all the cars that can be moved
