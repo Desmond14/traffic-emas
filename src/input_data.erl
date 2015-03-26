@@ -3,14 +3,17 @@
 %% API
 -export([load_data/0]).
 
--type data() :: dict:dict().
+-type data() :: atom().
 -type density() :: dense | normal | sparse.
 
--define(TOTAL_CARS, 40).
+-define(TOTAL_CARS, 10).
 
 -spec load_data() -> data().
 load_data() ->
-    random_set(normal).
+    ets:new(main, [set, named_table, public, {read_concurrency, true}]),
+    L = random_set(normal),
+    ets:insert(main, L),
+    main.
 
 %% =============================================================================
 %% Internal functions
@@ -20,7 +23,7 @@ load_data() ->
 -spec predefined_set(pos_integer()) -> data().
 predefined_set(1) ->
     North = [],
-    East = [{-2, south}, {-1, north}],
+    East = [{-1, north}],
     South = [],
     West = [],
     pack_set(North, East, South, West);
@@ -52,7 +55,7 @@ predefined_set(_) ->
 
 %% @doc Returns a random car configuration with a given density
 %% Uses macro ?TOTAL_CARS to determine the total number of cars to generate
--spec random_set(density()) ->dict:dict().
+-spec random_set(density()) -> proplists:proplist().
 random_set(TrafficDensity) ->
     PerLane = ?TOTAL_CARS div 4,
     MaxDist = case TrafficDensity of
@@ -70,9 +73,8 @@ random_set(TrafficDensity) ->
     MapLane = fun(Key) ->
                       dict:fetch(Key, MapDict)
               end,
-    CarList = [{{X, MapLane(Lane), MapLane(random:uniform(4))}, false}
-               || {X, Lane} <- sets:to_list(Positions)],
-    dict:from_list(CarList).
+    CarList = [{{X, MapLane(Lane)}, MapLane(random:uniform(4)), false}
+               || {X, Lane} <- sets:to_list(Positions)].
 
 
 %% @doc Adds a new unique random car position to a set
@@ -95,5 +97,4 @@ pack_set(North, East, South, West) ->
     STagged = [{X, south, Dest} || {X, Dest} <- South],
     WTagged = [{X, west, Dest} || {X, Dest} <- West],
     All = NTagged ++ ETagged ++ STagged ++ WTagged,
-    MoveField = [{{X, Lane, Dest}, false} || {X, Lane, Dest} <- All],
-    dict:from_list(MoveField).
+    [{{X, Lane}, Dest, false} || {X, Lane, Dest} <- All].
