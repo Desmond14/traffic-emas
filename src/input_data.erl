@@ -3,10 +3,10 @@
 %% API
 -export([load_data/0]).
 
--type data() :: dict:dict().
+-type data() :: gb_trees:tree({integer(), atom(), atom()}, boolean()).
 -type density() :: dense | normal | sparse.
 
--define(TOTAL_CARS, 40).
+-define(TOTAL_CARS, 10).
 
 -spec load_data() -> data().
 load_data() ->
@@ -20,7 +20,7 @@ load_data() ->
 -spec predefined_set(pos_integer()) -> data().
 predefined_set(1) ->
     North = [],
-    East = [{-2, south}, {-1, north}],
+    East = [{-1, north}],
     South = [],
     West = [],
     pack_set(North, East, South, West);
@@ -72,7 +72,8 @@ random_set(TrafficDensity) ->
               end,
     CarList = [{{X, MapLane(Lane), MapLane(random:uniform(4))}, false}
                || {X, Lane} <- sets:to_list(Positions)],
-    dict:from_list(CarList).
+    Sorted = lists:sort(CarList),
+    gb_trees:from_orddict(Sorted).
 
 
 %% @doc Adds a new unique random car position to a set

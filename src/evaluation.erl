@@ -27,46 +27,39 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
-    EraseCars = erase_cars(NewData),
-    ResetMoves = dict:map(fun(_K, _V) -> false end, EraseCars),
-    time_loop(Solution, ResetMoves, Result + Moves).
-
-
-%% @doc Removes cars which have already passed the crossing from the system
--spec erase_cars(data()) -> data().
-erase_cars(DataDict) ->
-    dict:filter(fun({X, _Lane, _Dest}, _Moved) ->
-                        X < 1
-                end, DataDict).
+    EraseCars = [{{X, Lane, Dest}, Moved}
+                 || {{X, Lane, Dest}, Moved} <- gb_trees:to_list(NewData), X < 1],
+    ResetMoves = [{Car, false} || {Car, _Moved} <- EraseCars],
+    time_loop(Solution, gb_trees:from_orddict(ResetMoves), Result + Moves).
 
 
 %% @doc Launches the loop that tries to move all the cars that can be moved
 -spec move_cars(gene(), data()) -> {data(), float()}.
 move_cars(Lights, InitialData) ->
-    move_one_car(dict:to_list(InitialData), InitialData, Lights, false, 0).
+    move_one_car(gb_trees:to_list(InitialData), InitialData, Lights, false, 0).
 
 
 %% @doc Iterate through all the cars and try to move them if there is space
 %% When no car can be moved, the iteration is finished
 -spec move_one_car(list(), data(), gene(), boolean(), integer()) ->
                           {data(), integer()}.
-move_one_car([], DataDict, _Lights, false, Res) ->
-    {DataDict, Res};
+move_one_car([], DataTree, _Lights, false, Res) ->
+    {DataTree, Res};
 
-move_one_car([], DataDict, Lights, true, Res) ->
-    move_one_car(dict:to_list(DataDict), DataDict, Lights, false, Res);
+move_one_car([], DataTree, Lights, true, Res) ->
+    move_one_car(gb_trees:to_list(DataTree), DataTree, Lights, false, Res);
 
-move_one_car([{_CarPosition, true} | Rest], DataDict, Lights, Flag, Res) ->
-    move_one_car(Rest, DataDict, Lights, Flag, Res);
+move_one_car([{_CarPosition, true} | Rest], DataTree, Lights, Flag, Res) ->
+    move_one_car(Rest, DataTree, Lights, Flag, Res);
 
-move_one_car([{Position, false} | Rest], DataDict, Lights, Flag, Res) ->
+move_one_car([{Position, false} | Rest], DataTree, Lights, Flag, Res) ->
     NewPosition = next_square(Position),
-    case is_taken(NewPosition, DataDict) or not car_can_go(Position, Lights) of
+    case is_taken(NewPosition, DataTree) or not car_can_go(Position, Lights) of
         true ->
-            move_one_car(Rest, DataDict, Lights, Flag, Res);
+            move_one_car(Rest, DataTree, Lights, Flag, Res);
         false ->
-            RemoveOld = dict:erase(Position, DataDict),
-            AddNew = dict:store(NewPosition, true, RemoveOld),
+            RemoveOld = gb_trees:delete(Position, DataTree),
+            AddNew = gb_trees:insert(NewPosition, true, RemoveOld),
             move_one_car(Rest, AddNew, Lights, true, Res + 1)
     end.
 
@@ -96,11 +89,11 @@ next_square({X, Lane, Dest}) ->
 
 %% @doc Checks if there is a car in a given position
 -spec is_taken(position(), data()) -> boolean().
-is_taken({X, Lane, _Dest}, DataDict) ->
-    dict:is_key({X, Lane, north}, DataDict) or
-        dict:is_key({X, Lane, east}, DataDict) or
-        dict:is_key({X, Lane, south}, DataDict) or
-        dict:is_key({X, Lane, west}, DataDict).
+is_taken({X, Lane, _Dest}, DataTree) ->
+    gb_trees:is_defined({X, Lane, north}, DataTree) or
+        gb_trees:is_defined({X, Lane, east}, DataTree) or
+        gb_trees:is_defined({X, Lane, south}, DataTree) or
+        gb_trees:is_defined({X, Lane, west}, DataTree).
 
 
 %% @doc Decides if a car can move given the light configuration
