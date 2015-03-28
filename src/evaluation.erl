@@ -103,23 +103,29 @@ is_taken({X, Lane}, ETS) ->
 %% @doc Decides if a car can move given the light configuration
 -spec car_can_go(integer(), dest(), gene()) -> boolean().
 car_can_go(-1, Lane, Lights) ->
-    LightDict = get_light_dictionary(Lights),
-    dict:fetch(Lane, LightDict);
+    get_light_for(Lights, Lane);
 
 car_can_go(0, Lane, Lights) ->
-    LightDict = get_light_dictionary(Lights),
     LeftLane = left_of(Lane),
-    not dict:fetch(LeftLane, LightDict);
+    not get_light_for(Lights, LeftLane);
 
 car_can_go(_X, _Lane, _Lights) ->
     true.
 
 
-%% @doc Creates a dictionary for a light configuration
--spec get_light_dictionary(gene()) -> dict:dict().
-get_light_dictionary({N, E, S, W}) ->
-    List = [{north, N == 1}, {east, E == 1}, {south, S == 1}, {west, W == 1}],
-    dict:from_list(List).
+%% @doc Checks if a there is a green light on a given crossing
+-spec get_light_for(gene(), dest()) -> boolean().
+get_light_for({N, _E, _S, _W}, north) ->
+    N == 1;
+
+get_light_for({_N, E, _S, _W}, east) ->
+    E == 1;
+
+get_light_for({_N, _E, S, _W}, south) ->
+    S == 1;
+
+get_light_for({_N, _E, _S, W}, west) ->
+    W == 1.
 
 
 %% @doc Returns the lane to the right of the parameter
