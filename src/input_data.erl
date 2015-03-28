@@ -70,7 +70,7 @@ random_set(TrafficDensity) ->
     MapLane = fun(Key) ->
                       dict:fetch(Key, MapDict)
               end,
-    CarList = [{{X, MapLane(Lane), MapLane(random:uniform(4))}, false}
+    CarList = [{{X, MapLane(Lane)}, {MapLane(random:uniform(4)), false}}
                || {X, Lane} <- sets:to_list(Positions)],
     dict:from_list(CarList).
 
@@ -95,5 +95,5 @@ pack_set(North, East, South, West) ->
     STagged = [{X, south, Dest} || {X, Dest} <- South],
     WTagged = [{X, west, Dest} || {X, Dest} <- West],
     All = NTagged ++ ETagged ++ STagged ++ WTagged,
-    MoveField = [{{X, Lane, Dest}, false} || {X, Lane, Dest} <- All],
+    MoveField = [{{X, Lane}, {Dest, false}} || {X, Lane, Dest} <- All],
     dict:from_list(MoveField).

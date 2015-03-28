@@ -7,7 +7,7 @@
 -type solution() :: [gene()].
 -type data() :: input_data:data().
 -type dest() :: north | east | south | west.
--type position() :: {integer(), dest(), dest()}.
+-type position() :: {integer(), dest()}.
 
 -define(LIGHTS, 0).
 
@@ -28,14 +28,16 @@ time_loop([], _, Result) ->
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
     EraseCars = erase_cars(NewData),
-    ResetMoves = dict:map(fun(_K, _V) -> false end, EraseCars),
+    ResetMoves = dict:map(fun(_K, {Dest, _Moved}) ->
+                                  {Dest, false}
+                          end, EraseCars),
     time_loop(Solution, ResetMoves, Result + Moves).
 
 
 %% @doc Removes cars which have already passed the crossing from the system
 -spec erase_cars(data()) -> data().
 erase_cars(DataDict) ->
-    dict:filter(fun({X, _Lane, _Dest}, _Moved) ->
+    dict:filter(fun({X, _Lane}, _Val) ->
                         X < 1
                 end, DataDict).
 
@@ -56,59 +58,56 @@ move_one_car([], DataDict, _Lights, false, Res) ->
 move_one_car([], DataDict, Lights, true, Res) ->
     move_one_car(dict:to_list(DataDict), DataDict, Lights, false, Res);
 
-move_one_car([{_CarPosition, true} | Rest], DataDict, Lights, Flag, Res) ->
+move_one_car([{_Pos, {_Dest, true}} | Rest], DataDict, Lights, Flag, Res) ->
     move_one_car(Rest, DataDict, Lights, Flag, Res);
 
-move_one_car([{Position, false} | Rest], DataDict, Lights, Flag, Res) ->
-    NewPosition = next_square(Position),
+move_one_car([{Position, {Dest, false}} | Rest], DataDict, Lights, Flag, Res) ->
+    NewPosition = next_square(Position, Dest),
     case is_taken(NewPosition, DataDict) or not car_can_go(Position, Lights) of
         true ->
             move_one_car(Rest, DataDict, Lights, Flag, Res);
         false ->
             RemoveOld = dict:erase(Position, DataDict),
-            AddNew = dict:store(NewPosition, true, RemoveOld),
+            AddNew = dict:store(NewPosition, {Dest, true}, RemoveOld),
             move_one_car(Rest, AddNew, Lights, true, Res + 1)
     end.
 
 
 %% @doc Computes the next position after moving a car
--spec next_square(position()) -> position().
-next_square({X, Lane, Dest}) ->
+-spec next_square(position(), dest()) -> position().
+next_square({X, Lane}, Dest) ->
     case X of
         -1 ->
             case right_of(Lane) == Dest of
                 true ->
-                    {1, Dest, Dest};
+                    {1, Dest};
                 false ->
-                    {0, Lane, Dest}
+                    {0, Lane}
             end;
         0 ->
             case Lane == Dest of
                 true ->
-                    {1, Dest, Dest};
+                    {1, Dest};
                 false ->
-                    {0, left_of(Lane), Dest}
+                    {0, left_of(Lane)}
             end;
         X ->
-            {X + 1, Lane, Dest}
+            {X + 1, Lane}
     end.
 
 
 %% @doc Checks if there is a car in a given position
 -spec is_taken(position(), data()) -> boolean().
-is_taken({X, Lane, _Dest}, DataDict) ->
-    dict:is_key({X, Lane, north}, DataDict) or
-        dict:is_key({X, Lane, east}, DataDict) or
-        dict:is_key({X, Lane, south}, DataDict) or
-        dict:is_key({X, Lane, west}, DataDict).
+is_taken({X, Lane}, DataDict) ->
+    dict:is_key({X, Lane}, DataDict).
 
 
 %% @doc Decides if a car can move given the light configuration
 -spec car_can_go(position(), gene()) -> boolean().
-car_can_go({-1, Lane, _Dest}, Lights) ->
+car_can_go({-1, Lane}, Lights) ->
     get_light_for(Lights, Lane);
 
-car_can_go({0, Lane, _Dest}, Lights) ->
+car_can_go({0, Lane}, Lights) ->
     LeftLane = left_of(Lane),
     not get_light_for(Lights, LeftLane);
 
