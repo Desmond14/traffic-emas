@@ -3,7 +3,7 @@
 %% API
 -export([load_data/0]).
 
--type data() :: dict:dict().
+-type data() :: proplists:proplist().
 -type density() :: dense | normal | sparse.
 
 -define(TOTAL_CARS, 16).
@@ -70,9 +70,8 @@ random_set(TrafficDensity) ->
     MapLane = fun(Key) ->
                       dict:fetch(Key, MapDict)
               end,
-    CarList = [{{X, MapLane(Lane)}, {MapLane(random:uniform(4)), false}}
-               || {X, Lane} <- sets:to_list(Positions)],
-    dict:from_list(CarList).
+    [{{X, MapLane(Lane)}, MapLane(random:uniform(4)), false}
+     || {X, Lane} <- sets:to_list(Positions)].
 
 
 %% @doc Adds a new unique random car position to a set
@@ -95,5 +94,4 @@ pack_set(North, East, South, West) ->
     STagged = [{X, south, Dest} || {X, Dest} <- South],
     WTagged = [{X, west, Dest} || {X, Dest} <- West],
     All = NTagged ++ ETagged ++ STagged ++ WTagged,
-    MoveField = [{{X, Lane}, {Dest, false}} || {X, Lane, Dest} <- All],
-    dict:from_list(MoveField).
+    [{{X, Lane}, Dest, false} || {X, Lane, Dest} <- All].

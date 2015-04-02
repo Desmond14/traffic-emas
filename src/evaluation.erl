@@ -28,45 +28,43 @@ time_loop([], _, Result) ->
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
 
-    EraseCars = dict:filter(fun({X, _Lane}, _Val) ->
-                                    X < 1
-                            end, NewData),
+    UpdatedData = [{{X, Lane}, Dest, false}
+                 || {{X, Lane}, Dest, _Mv} <- NewData, X < 1],
 
-    ResetMoves = dict:map(fun(_K, {Dest, _Moved}) ->
-                                  {Dest, false}
-                          end, EraseCars),
-
-    time_loop(Solution, ResetMoves, Result + Moves).
+    time_loop(Solution, UpdatedData, Result + Moves).
 
 
 %% @doc Launches the loop that tries to move all the cars that can be moved
 -spec move_cars(gene(), data()) -> {data(), float()}.
 move_cars(Lights, InitialData) ->
-    move_one_car(dict:to_list(InitialData), InitialData, Lights, false, 0).
+    move_one_car(InitialData, InitialData, Lights, false, 0).
 
 
 %% @doc Iterate through all the cars and try to move them if there is space
 %% When no car can be moved, the iteration is finished
 -spec move_one_car(list(), data(), gene(), boolean(), integer()) ->
                           {data(), integer()}.
-move_one_car([], DataDict, _Lights, false, Res) ->
-    {DataDict, Res};
+move_one_car([], DataList, _Lights, false, Res) ->
+    {DataList, Res};
 
-move_one_car([], DataDict, Lights, true, Res) ->
-    move_one_car(dict:to_list(DataDict), DataDict, Lights, false, Res);
+move_one_car([], DataList, Lights, true, Res) ->
+    move_one_car(DataList, DataList, Lights, false, Res);
 
-move_one_car([{_Pos, {_Dest, true}} | Rest], DataDict, Lights, Flag, Res) ->
-    move_one_car(Rest, DataDict, Lights, Flag, Res);
+move_one_car([{_Pos, _Dest, true} | Rest], DataList, Lights, Flag, Res) ->
+    move_one_car(Rest, DataList, Lights, Flag, Res);
 
-move_one_car([{Position, {Dest, false}} | Rest], DataDict, Lights, Flag, Res) ->
+move_one_car([{Position, Dest, false} | Rest], DataList, Lights, Flag, Res) ->
     NewPosition = next_square(Position, Dest),
-    case is_taken(NewPosition, DataDict) or not car_can_go(Position, Lights) of
+    case is_taken(NewPosition, DataList) or not car_can_go(Position, Lights) of
         true ->
-            move_one_car(Rest, DataDict, Lights, Flag, Res);
+            move_one_car(Rest, DataList, Lights, Flag, Res);
         false ->
-            RemoveOld = dict:erase(Position, DataDict),
-            AddNew = dict:store(NewPosition, {Dest, true}, RemoveOld),
-            move_one_car(Rest, AddNew, Lights, true, Res + 1)
+            NewData = lists:keyreplace(Position,
+                                       1,
+                                       DataList,
+                                       {NewPosition, Dest, true}),
+
+            move_one_car(Rest, NewData, Lights, true, Res + 1)
     end.
 
 
@@ -95,8 +93,8 @@ next_square({X, Lane}, Dest) ->
 
 %% @doc Checks if there is a car in a given position
 -spec is_taken(position(), data()) -> boolean().
-is_taken({X, Lane}, DataDict) ->
-    dict:is_key({X, Lane}, DataDict).
+is_taken(Key, DataList) ->
+    lists:keymember(Key, 1, DataList).
 
 
 %% @doc Decides if a car can move given the light configuration
