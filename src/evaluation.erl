@@ -32,10 +32,11 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], ETS, Result) ->
     Moves = move_cars(Lights, ETS),
-    ets:match_delete(ETS, [{ {{'$1', '_'}, '_', '_'}, [{'<', '$1', 1}], [] }]),
-    MovedCars = ets:match(ETS, {'$1', '_', true}),
-    [ets:update_element(ETS, Key, {3, false})
-        || Key <- lists:flatten(MovedCars)],
+    InitETS = ets:tab2list(ETS),
+    Updated = [{{X, Lane}, Dest, false}
+               || {{X, Lane}, Dest, _Mv} <- InitETS, X < 1],
+    ets:delete_all_objects(ETS),
+    ets:insert(ETS, Updated),
     time_loop(Solution, ETS, Result + Moves).
 
 
@@ -60,7 +61,6 @@ move_one_car([{_CarPosition, _Dest, true} | Rest], ETS, Lights, Flag, Res) ->
 
 move_one_car([{{X, Lane}, Dest, false} | Rest], ETS, Lights, Flag, Res) ->
     NewPosition = next_square(X, Lane, Dest),
-
     case is_taken(NewPosition, ETS) or not car_can_go(X, Lane, Lights) of
         true ->
             move_one_car(Rest, ETS, Lights, Flag, Res);
