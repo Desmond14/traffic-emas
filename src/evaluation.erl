@@ -7,7 +7,7 @@
 -type solution() :: [gene()].
 -type data() :: input_data:data().
 -type dest() :: north | east | south | west.
--type position() :: {integer(), dest(), dest()}.
+-type position() :: {integer(), dest()}.
 
 -define(LIGHTS, 0).
 
@@ -27,9 +27,10 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
-    EraseCars = [{{X, Lane, Dest}, Moved}
-                 || {{X, Lane, Dest}, Moved} <- gb_trees:to_list(NewData), X < 1],
-    ResetMoves = [{Car, false} || {Car, _Moved} <- EraseCars],
+    EraseCars = [{{X, Lane}, Val}
+                 || {{X, Lane}, Val} <- gb_trees:to_list(NewData), X < 1],
+
+    ResetMoves = [{Car, {Dest, false}} || {Car, {Dest, _Mv}} <- EraseCars],
     time_loop(Solution, gb_trees:from_orddict(ResetMoves), Result + Moves).
 
 
@@ -49,59 +50,56 @@ move_one_car([], DataTree, _Lights, false, Res) ->
 move_one_car([], DataTree, Lights, true, Res) ->
     move_one_car(gb_trees:to_list(DataTree), DataTree, Lights, false, Res);
 
-move_one_car([{_CarPosition, true} | Rest], DataTree, Lights, Flag, Res) ->
+move_one_car([{_Pos, {_Dest, true}} | Rest], DataTree, Lights, Flag, Res) ->
     move_one_car(Rest, DataTree, Lights, Flag, Res);
 
-move_one_car([{Position, false} | Rest], DataTree, Lights, Flag, Res) ->
-    NewPosition = next_square(Position),
+move_one_car([{Position, {Dest, false}} | Rest], DataTree, Lights, Flag, Res) ->
+    NewPosition = next_square(Position, Dest),
     case is_taken(NewPosition, DataTree) or not car_can_go(Position, Lights) of
         true ->
             move_one_car(Rest, DataTree, Lights, Flag, Res);
         false ->
             RemoveOld = gb_trees:delete(Position, DataTree),
-            AddNew = gb_trees:insert(NewPosition, true, RemoveOld),
+            AddNew = gb_trees:insert(NewPosition, {Dest, true}, RemoveOld),
             move_one_car(Rest, AddNew, Lights, true, Res + 1)
     end.
 
 
 %% @doc Computes the next position after moving a car
--spec next_square(position()) -> position().
-next_square({X, Lane, Dest}) ->
+-spec next_square(position(), dest()) -> position().
+next_square({X, Lane}, Dest) ->
     case X of
         -1 ->
             case right_of(Lane) == Dest of
                 true ->
-                    {1, Dest, Dest};
+                    {1, Dest};
                 false ->
-                    {0, Lane, Dest}
+                    {0, Lane}
             end;
         0 ->
             case Lane == Dest of
                 true ->
-                    {1, Dest, Dest};
+                    {1, Dest};
                 false ->
-                    {0, left_of(Lane), Dest}
+                    {0, left_of(Lane)}
             end;
         X ->
-            {X + 1, Lane, Dest}
+            {X + 1, Lane}
     end.
 
 
 %% @doc Checks if there is a car in a given position
 -spec is_taken(position(), data()) -> boolean().
-is_taken({X, Lane, _Dest}, DataTree) ->
-    gb_trees:is_defined({X, Lane, north}, DataTree) or
-        gb_trees:is_defined({X, Lane, east}, DataTree) or
-        gb_trees:is_defined({X, Lane, south}, DataTree) or
-        gb_trees:is_defined({X, Lane, west}, DataTree).
+is_taken({X, Lane}, DataTree) ->
+    gb_trees:is_defined({X, Lane}, DataTree).
 
 
 %% @doc Decides if a car can move given the light configuration
 -spec car_can_go(position(), gene()) -> boolean().
-car_can_go({-1, Lane, _Dest}, Lights) ->
+car_can_go({-1, Lane}, Lights) ->
     get_light_for(Lights, Lane);
 
-car_can_go({0, Lane, _Dest}, Lights) ->
+car_can_go({0, Lane}, Lights) ->
     LeftLane = left_of(Lane),
     not get_light_for(Lights, LeftLane);
 

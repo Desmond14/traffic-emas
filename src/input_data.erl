@@ -6,7 +6,7 @@
 -type data() :: gb_trees:tree({integer(), atom(), atom()}, boolean()).
 -type density() :: dense | normal | sparse.
 
--define(TOTAL_CARS, 10).
+-define(TOTAL_CARS, 16).
 
 -spec load_data() -> data().
 load_data() ->
@@ -15,40 +15,6 @@ load_data() ->
 %% =============================================================================
 %% Internal functions
 %% =============================================================================
-
-%% @doc Predefined hardcoded example datasets
--spec predefined_set(pos_integer()) -> data().
-predefined_set(1) ->
-    North = [],
-    East = [{-1, north}],
-    South = [],
-    West = [],
-    pack_set(North, East, South, West);
-
-predefined_set(2) ->
-    North = [{-2, south}],
-    East = [],
-    South = [],
-    West = [],
-    pack_set(North, East, South, West);
-
-predefined_set(3) ->
-    North = [{0, east}, {-2, south}, {-1, east}],
-    East = [{-4, north}, {-1, south}],
-    South = [{0, east}, {-3, east}, {-2, north}, {-1, south}],
-    West = [{-2, east}, {-5, east}],
-    pack_set(North, East, South, West);
-
-predefined_set(4) ->
-    North = [{-3, east}, {-2, south}, {-1, east}],
-    East = [{-2, north}, {-1, south}],
-    South = [{-3, east}, {-2, north}, {-1, south}],
-    West = [{-2, south}],
-    pack_set(North, East, South, West);
-
-predefined_set(_) ->
-    random_set(normal).
-
 
 %% @doc Returns a random car configuration with a given density
 %% Uses macro ?TOTAL_CARS to determine the total number of cars to generate
@@ -70,7 +36,7 @@ random_set(TrafficDensity) ->
     MapLane = fun(Key) ->
                       dict:fetch(Key, MapDict)
               end,
-    CarList = [{{X, MapLane(Lane), MapLane(random:uniform(4))}, false}
+    CarList = [{{X, MapLane(Lane)}, {MapLane(random:uniform(4)), false}}
                || {X, Lane} <- sets:to_list(Positions)],
     Sorted = lists:sort(CarList),
     gb_trees:from_orddict(Sorted).
@@ -86,15 +52,3 @@ random_position(MaxDist, CarSet) ->
         false ->
             sets:add_element(RandomPosition, CarSet)
     end.
-
-
-%% @doc Packs lists with position into a proper data structure
--spec pack_set([tuple()], [tuple()], [tuple()], [tuple()]) -> data().
-pack_set(North, East, South, West) ->
-    NTagged = [{X, north, Dest} || {X, Dest} <- North],
-    ETagged = [{X, east, Dest} || {X, Dest} <- East],
-    STagged = [{X, south, Dest} || {X, Dest} <- South],
-    WTagged = [{X, west, Dest} || {X, Dest} <- West],
-    All = NTagged ++ ETagged ++ STagged ++ WTagged,
-    MoveField = [{{X, Lane, Dest}, false} || {X, Lane, Dest} <- All],
-    dict:from_list(MoveField).
