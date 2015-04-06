@@ -27,11 +27,10 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
-    EraseCars = [{{X, Lane}, Val}
-                 || {{X, Lane}, Val} <- gb_trees:to_list(NewData), X < 1],
-
-    ResetMoves = [{Car, {Dest, false}} || {Car, {Dest, _Mv}} <- EraseCars],
-    time_loop(Solution, gb_trees:from_orddict(ResetMoves), Result + Moves).
+    UpdatedData = [{{X, Lane}, {Dest, false}}
+                   || {{X, Lane}, {Dest, _Mv}} <- gb_trees:to_list(NewData),
+                      X < 1],
+    time_loop(Solution, gb_trees:from_orddict(UpdatedData), Result + Moves).
 
 
 %% @doc Launches the loop that tries to move all the cars that can be moved
