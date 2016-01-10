@@ -1,13 +1,15 @@
 -module(evaluation).
 
--export([evaluate_solution/2]).
+-export([evaluate_solution/2, next_square/2, car_can_go/2]).
 
 -type bit() :: 0 | 1.
--type gene() :: {bit(), bit(), bit(), bit()}.
+-type gene() :: {bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit(), bit()}.
+-type quarter_gene() :: {bit(), bit(), bit(), bit()}.
 -type solution() :: [gene()].
 -type data() :: input_data:data().
--type dest() :: north | east | south | west.
--type position() :: {integer(), dest()}.
+-type dest() :: north | south | east | west.
+-type lane() :: left | right.
+-type position() :: {integer(), dest(), lane()}.
 
 -define(LIGHTS, 0).
 
@@ -28,8 +30,8 @@ time_loop([], _, Result) ->
 time_loop([Lights | Solution], Data, Result) ->
     {NewData, Moves} = move_cars(Lights, Data),
 
-    UpdatedData = [{{X, Lane}, Dest, false}
-                 || {{X, Lane}, Dest, _Mv} <- NewData, X < 1],
+    UpdatedData = [{{X, InitialDest, Lane}, Dest, false}
+                 || {{X, InitialDest,  Lane}, Dest, _Mv} <- NewData, X < 4],
 
     time_loop(Solution, UpdatedData, Result + Moves).
 
@@ -55,7 +57,7 @@ move_one_car([{_Pos, _Dest, true} | Rest], DataList, Lights, Flag, Res) ->
 
 move_one_car([{Position, Dest, false} | Rest], DataList, Lights, Flag, Res) ->
     NewPosition = next_square(Position, Dest),
-    case is_taken(NewPosition, DataList) or not car_can_go(Position, Lights) of
+    case is_taken(NewPosition, DataList) or not car_can_go(NewPosition, Lights) of
         true ->
             move_one_car(Rest, DataList, Lights, Flag, Res);
         false ->
@@ -70,62 +72,116 @@ move_one_car([{Position, Dest, false} | Rest], DataList, Lights, Flag, Res) ->
 
 %% @doc Computes the next position after moving a car
 -spec next_square(position(), dest()) -> position().
-next_square({X, Lane}, Dest) ->
+next_square({X, Direction, Lane}, Dest) ->
     case X of
         -1 ->
-            case right_of(Lane) == Dest of
+            case right_of(Direction) == Dest of
                 true ->
-                    {1, Dest};
+                    {3, Dest, right};
                 false ->
-                    {0, Lane}
+                    {0, Direction, Lane}
             end;
-        0 ->
-            case Lane == Dest of
+        1 ->
+            case Direction == Dest of
                 true ->
-                    {1, Dest};
+                    {2, Dest, Lane};
                 false ->
-                    {0, left_of(Lane)}
+                    {1, left_of(Direction), left}
             end;
         X ->
-            {X + 1, Lane}
+            {X + 1, Direction, Lane}
     end.
 
 
 %% @doc Checks if there is a car in a given position
 -spec is_taken(position(), data()) -> boolean().
 is_taken(Key, DataList) ->
-    lists:keymember(Key, 1, DataList).
+    lists:keymember(Key, 1, DataList) orelse lists:keymember(translate(Key), 1, DataList).
+
+
+%%TODO: check name to sth like collision_position or similar
+-spec translate(position()) -> position().
+translate({-1, Dest, right}) ->
+    {2, previous_of(Dest), right};
+
+translate({-1, Dest, left}) ->
+    {1, previous_of(Dest), right};
+
+translate({0, Dest, right}) ->
+    {2, previous_of(Dest), left};
+
+translate({0, Dest, left}) ->
+    {1, previous_of(Dest), left};
+
+translate({1, Dest, right}) ->
+    {-1, next_of(Dest), left};
+
+translate({1, Dest, left}) ->
+    {0, next_of(Dest), left};
+
+translate({2, Dest, right}) ->
+    {-1, next_of(Dest), right};
+
+translate({2, Dest, left}) ->
+    {0, next_of(Dest), right};
+
+translate({Position, Dest, Lane}) ->
+    {Position, Dest, Lane}.
 
 
 %% @doc Decides if a car can move given the light configuration
 -spec car_can_go(position(), gene()) -> boolean().
-car_can_go({-1, Lane}, Lights) ->
-    get_light_for(Lights, Lane);
+car_can_go({-1, Dest, Lane}, Lights) ->
+    get_light_for(Lights, {-1, Dest, Lane});
 
-car_can_go({0, Lane}, Lights) ->
-    LeftLane = left_of(Lane),
-    not get_light_for(Lights, LeftLane);
+car_can_go({-0, Dest, Lane}, Lights) ->
+    get_light_for(Lights, {0, Dest, Lane});
+
+car_can_go({1, Dest, Lane}, Lights) ->
+    not get_light_for(Lights, translate({1, Dest, Lane}));
+
+car_can_go({2, Dest, Lane}, Lights) ->
+    not get_light_for(Lights, translate({2, Dest, Lane}));
 
 car_can_go(_Position, _Lights) ->
     true.
 
 
 %% @doc Checks if a there is a green light on a given crossing
--spec get_light_for(gene(), dest()) -> boolean().
-get_light_for({N, _E, _S, _W}, north) ->
-    N == 1;
-
-get_light_for({_N, E, _S, _W}, east) ->
-    E == 1;
-
-get_light_for({_N, _E, S, _W}, south) ->
-    S == 1;
-
-get_light_for({_N, _E, _S, W}, west) ->
-    W == 1.
+-spec get_light_for(gene(), position()) -> boolean().
+get_light_for(Lights, {Position, Dest, Lane}) ->
+    QuarterLights = get_quarter_lights(Dest, Lights),
+    get_light_for(QuarterLights, Position, Lane) == 1.
 
 
-%% @doc Returns the lane to the right of the parameter
+-spec get_quarter_lights(dest(), gene()) -> quarter_gene().
+get_quarter_lights(south, Lights) ->
+    {erlang:element(1, Lights), erlang:element(2, Lights), erlang:element(3, Lights), erlang:element(4, Lights)};
+
+get_quarter_lights(west, Lights) ->
+    {erlang:element(5, Lights), erlang:element(6, Lights), erlang:element(7, Lights), erlang:element(8, Lights)};
+
+get_quarter_lights(north, Lights) ->
+    {erlang:element(9, Lights), erlang:element(10, Lights), erlang:element(11, Lights), erlang:element(12, Lights)};
+
+get_quarter_lights(east, Lights) ->
+    {erlang:element(13, Lights), erlang:element(14, Lights), erlang:element(15, Lights), erlang:element(16, Lights)}.
+
+
+-spec get_light_for(quarter_gene(), position(), lane()) -> bit().
+get_light_for({_S, _W, _N, E}, -1, left) ->
+    E;
+
+get_light_for({_S, _W, N, _E}, -1, right) ->
+    N;
+
+get_light_for({S, _W, _N, _E}, 0, left) ->
+    S;
+
+get_light_for({_S, W, _N, _E}, 0, right) ->
+    W.
+
+
 -spec right_of(dest()) -> dest().
 right_of(north) ->
     east;
@@ -152,4 +208,32 @@ left_of(south) ->
     east;
 
 left_of(east) ->
+    north.
+
+
+-spec next_of(dest()) -> dest().
+next_of(north) ->
+    west;
+
+next_of(west) ->
+    south;
+
+next_of(south) ->
+    east;
+
+next_of(east) ->
+    north.
+
+
+-spec previous_of(dest()) -> dest().
+previous_of(north) ->
+    east;
+
+previous_of(east) ->
+    south;
+
+previous_of(south) ->
+    west;
+
+previous_of(west) ->
     north.

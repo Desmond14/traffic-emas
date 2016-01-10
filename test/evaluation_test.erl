@@ -57,6 +57,55 @@ evaluation13_test() ->
     Fitness = evaluate_example(6, 3),
     ?assertEqual(Fitness, 13).
 
+next_square1_test() ->
+  {NextPosition, NextDirection, NextLane} = evaluation:next_square({-1, north, right}, east),
+  ?assertEqual(NextPosition, 3),
+  ?assertEqual(NextDirection, east),
+  ?assertEqual(NextLane, right).
+
+next_square2_test() ->
+  {NextPosition, NextDirection, NextLane} = evaluation:next_square({1, east, left}, south),
+  ?assertEqual(NextPosition, 1),
+  ?assertEqual(NextDirection, south),
+  ?assertEqual(NextLane, left).
+
+next_square3_test() ->
+  {NextPosition, NextDirection, NextLane} = evaluation:next_square({1, west, left}, west),
+  ?assertEqual(NextPosition, 2),
+  ?assertEqual(NextDirection, west),
+  ?assertEqual(NextLane, left).
+
+car_can_go1_test() ->
+  Result = evaluation:car_can_go({1, west, left}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
+  ?assertEqual(Result, true).
+
+car_can_go2_test() ->
+  Result = evaluation:car_can_go({0, south, left}, {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
+  ?assertEqual(Result, true).
+
+car_can_go3_test() ->
+  Result = evaluation:car_can_go({-1, north, right}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0}),
+  ?assertEqual(Result, true).
+
+car_can_go4_test() ->
+  Result = evaluation:car_can_go({2, east, right}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
+  ?assertEqual(Result, true).
+
+car_can_go5_test() ->
+  Result = evaluation:car_can_go({-1, east, left}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}),
+  ?assertEqual(Result, true).
+
+car_can_go6_test() ->
+  Result = evaluation:car_can_go({-1, east, left}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
+  ?assertEqual(Result, false).
+
+car_can_go7_test() ->
+  Result = evaluation:car_can_go({1, south, right}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}),
+  ?assertEqual(Result, false).
+
+car_can_go8_test() ->
+  Result = evaluation:car_can_go({0, south, left}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+  ?assertEqual(Result, false).
 
 %% @doc Calculate fitness for a specific combination of dataset and solution
 -spec evaluate_example(pos_integer(), pos_integer()) -> float().
