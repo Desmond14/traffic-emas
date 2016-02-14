@@ -1,6 +1,6 @@
 -module(evaluation_multilane_test).
 
--import(evaluation_multilane, [calculate_dist_to_semaphore/4, calculate_dist_to_car_ahead/2]).
+-import(evaluation_multilane, [calculate_dist_to_semaphore/4, calculate_dist_to_car_ahead/2, calculate_dist_to_first_blocking_semaphore/3]).
 
 -define(MAX_INT, 134217727).
 
@@ -9,48 +9,22 @@
 %%evaluation1_test() ->
 %%  Solution = evaluate_solution().
 
-calculate_dist_to_semaphore_test() ->
+calculate_dist_to_first_blocking_semaphore_test() ->
   Intersection = input:load_intersection_definition(),
-  PathToDest = [11],
-  CarPosition1 = #{node_id=>1, position_on_node=>1},
-  Result = calculate_dist_to_semaphore(Intersection, CarPosition1, PathToDest, 0),
-  ?assertEqual(5, Result),
+  Car = #{position=>#{node_id=>1, position_on_node=>1}, path_to_dest=>[4, 8, 11]},
+  Car2 = #{position=>#{node_id=>7, position_on_node=>2}, path_to_dest=>[8, 9, 10]},
+  Lights = #{4=>0, 8=>0, 9=>0},
+  ?assertEqual(?MAX_INT, calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights)),
+  ?assertEqual(4, calculate_dist_to_first_blocking_semaphore(Intersection, Car2, Lights)),
 
-  CarPosition2 = #{node_id=>1, position_on_node=>3},
-  Result2 = calculate_dist_to_semaphore(Intersection, CarPosition2, PathToDest, 0),
-  ?assertEqual(3, Result2),
+  LightsWithFirstSemaphoreBlocking =  #{4=>1, 8=>0},
+  ?assertEqual(5, calculate_dist_to_first_blocking_semaphore(Intersection, Car, LightsWithFirstSemaphoreBlocking)),
 
-  EmptyPathDest = [],
-  CarPosition3 = #{node_id=>11, position_on_node=>1},
-  Result3 = calculate_dist_to_semaphore(Intersection, CarPosition3, EmptyPathDest, 0),
-  ?assertEqual(?MAX_INT, Result3),
+  LightsWithFirstSemaphoreBlocking2 =  #{4=>2, 8=>0},
+  ?assertEqual(5, calculate_dist_to_first_blocking_semaphore(Intersection, Car, LightsWithFirstSemaphoreBlocking2)),
 
-  CarPosition4 = #{node_id=>8, position_on_node=>1},
-  Result4 = calculate_dist_to_semaphore(Intersection, CarPosition4, EmptyPathDest, 0),
-  ?assertEqual(0, Result4).
+  LightsWithSecondSemaphoreBlocking =  #{4=>0, 8=>1},
+  ?assertEqual(6, calculate_dist_to_first_blocking_semaphore(Intersection, Car, LightsWithSecondSemaphoreBlocking)),
 
-calculates_dist_to_car_on_the_same_lane_test() ->
-  Intersection = input:load_intersection_definition(),
-  UpdatedIntersection = intersection:add_car_on(5, #{node_id=>1, position_on_node=>4}, Intersection),
-  [Car | _] = input:load_car_definitions(),
-  calculate_dist_to_car_ahead_test(UpdatedIntersection, Car, 3).
-
-calculates_dist_to_car_on_same_position_test() ->
-  Intersection = intersection:add_car_on(5, #{node_id=>1, position_on_node=>1}, input:load_intersection_definition()),
-  [Car | _] = input:load_car_definitions(),
-  calculate_dist_to_car_ahead_test(Intersection, Car, 0).
-
-calculates_dist_to_car_on_semaphore_test() ->
-  Intersection = intersection:add_car_on(5, #{node_id=>8, position_on_node=>1}, input:load_intersection_definition()),
-  [Car | _] = input:load_car_definitions(),
-  calculate_dist_to_car_ahead_test(Intersection, Car, 6).
-
-%% TODO: this case doesn't work
-calculates_dist_to_car_on_next_lane_test() ->
-  Intersection = intersection:add_car_on(5, #{node_id=>11, position_on_node=>1}, input:load_intersection_definition()),
-  [Car | _] = input:load_car_definitions(),
-  calculate_dist_to_car_ahead_test(Intersection, Car, 8).
-
-%% TODO: add test case when no car ahead
-calculate_dist_to_car_ahead_test(Intersection, Car, ExpectedResult) ->
-  ?assertEqual(ExpectedResult, calculate_dist_to_car_ahead(Intersection, Car)).
+  LightsWithSecondSemaphoreBlocking2 =  #{4=>0, 8=>2},
+  ?assertEqual(6, calculate_dist_to_first_blocking_semaphore(Intersection, Car, LightsWithSecondSemaphoreBlocking2)).

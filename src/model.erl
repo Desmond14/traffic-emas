@@ -1,4 +1,0 @@
--module(model).
-
-%% API
--export([]).

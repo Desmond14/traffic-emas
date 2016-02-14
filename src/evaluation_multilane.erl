@@ -1,9 +1,13 @@
 -module(evaluation_multilane).
 
 %% API
--export([evaluate_solution/2, calculate_dist_to_semaphore/4, calculate_dist_to_car_ahead/2]).
+-export([evaluate_solution/2, calculate_dist_to_first_blocking_semaphore/3]).
 
--type trit() :: 0 | 1 | 2.
+-define(GREEN_FOR_LOWER_ID, 0).
+-define(BOTH_RED, 1).
+-define(GREEN_FOR_HIGHER_ID, 2).
+
+-type trit() :: ?GREEN_FOR_LOWER_ID | ?BOTH_RED | ?GREEN_FOR_HIGHER_ID.
 -type gene() :: map().
 -type solution() :: [gene()].
 -type intersection() :: input:intersection().
@@ -34,8 +38,20 @@ time_loop([Lights | Solution], Data, Result) ->
 -spec move_cars(gene(), data()) -> {data(), float()}.
 move_cars(Lights, InitialData) ->
   {Intersection, Cars} = InitialData,
-  move_one_car(Intersection, Intersection, Cars, Cars, Lights, 0).
+  NormalizedCars = convert_paths_to_full_paths(Cars, Intersection),
+  move_one_car(Intersection, Intersection, NormalizedCars, NormalizedCars, Lights, 0).
 
+-spec convert_paths_to_full_paths([car()], intersection()) -> [car()].
+convert_paths_to_full_paths(Cars, Intersection) ->
+  convert_one_car(Cars, [], Intersection).
+
+convert_one_car([], ConvertedCars, _Intersection) ->
+  ConvertedCars;
+
+convert_one_car(InitialCars, ConvertedCars, Intersection) ->
+  CarToConvert = hd(InitialCars),
+  ConvertedCar = maps:update(path_to_dest, car:get_full_path(CarToConvert, Intersection), CarToConvert),
+  convert_one_car(tl(InitialCars), lists:append(ConvertedCars, [ConvertedCar]), Intersection).
 
 %% @doc Iterate through all the cars and try to move them if there is space
 %% When no car can be moved, the iteration is finished
@@ -45,68 +61,70 @@ move_one_car(_InitialIntersection, UpdatedIntersection, [], UpdatedCars, _Lights
 
 move_one_car(InitialIntersection, UpdatedIntersection, CarsToProcess, UpdatedCars, Lights, Distance) ->
   [Car | _] = CarsToProcess,
-  DistToSemaphore = calculate_dist_to_semaphore(InitialIntersection, maps:get(position,Car), maps:get(path_to_dest,Car), 0),
-  %%DistToCarAhead = calculateDistToCarAhead(InitialIntersection, maps:get(position,Car), maps:get(path_to_dest,Car)),
-  {dupa, dupa}.
+%%  case is_in_safe_distance_to_blocking_semaphore(InitialIntersection, Car, Lights) of
+%%    true -> follow_nagel_schreckenberg()
+%%  end,
+  move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), UpdatedCars, Lights, Distance).
 
-%% We moved outside intersection and didn't encounter semaphore
-calculate_dist_to_semaphore(Intersection, CurrentPosition, [], Result) ->
+is_in_safe_distance_to_blocking_semaphore(Intersection, Car, Lights) ->
+  InitialVelocity = car:get_velocity(Car),
+  DistToBlockingSemaphore = calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
+  is_in_safe_distance_to_blocking_semaphore(InitialVelocity, DistToBlockingSemaphore).
+
+is_in_safe_distance_to_blocking_semaphore(0, Distance) ->
+  Distance > 0;
+
+is_in_safe_distance_to_blocking_semaphore(Velocity, Distance) ->
+  NewVelocity = Velocity-1,
+  DistanceLeft = Distance - NewVelocity,
+  is_in_safe_distance_to_blocking_semaphore(NewVelocity, DistanceLeft).
+
+calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights) ->
+  calculate_dist_to_first_blocking_semaphore(Intersection, maps:get(position,Car), maps:get(path_to_dest,Car), Lights, 0).
+
+calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, [], Lights, Result) ->
+  ?MAX_INT;
+
+calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, FullPathToDest, Lights, Result) ->
+  {NextPosition, DistToNextNode} = dist_to_next_node(CurrentPosition, FullPathToDest, Intersection),
+  calculate_dist_to_first_blocking_semaphore(Intersection, NextPosition, CurrentPosition, tl(FullPathToDest), Lights, Result + DistToNextNode).
+
+calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, PreviousPosition, [], Lights, Result) ->
+  ?MAX_INT;
+
+calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, PreviousPosition, FullPathToDest, Lights, Result) ->
   CurrentNode = maps:get(maps:get(node_id, CurrentPosition), Intersection),
-  io:format("Current Node: ~p~n", [maps:get(id, CurrentNode)]),
   case maps:get(type, CurrentNode) of
-    semaphore -> Result;
-    lane -> ?MAX_INT %max integer
-  end;
-
-calculate_dist_to_semaphore(Intersection, CurrentPosition, PathToDest, Result) ->
-  CurrentNode = maps:get(maps:get(node_id, CurrentPosition), Intersection),
-  io:format("Current Node: ~p~n", [maps:get(id, CurrentNode)]),
-  case maps:get(type, CurrentNode) of
-    semaphore -> Result;
-    lane ->
-      [NextLaneId | _] = PathToDest,
-      PathToNextLane = maps:get(NextLaneId, maps:get(next_lane_paths, CurrentNode)),
-      [NextNodeId| _] = PathToNextLane,
-      PositionOnCurrentNode = maps:get(position_on_node, CurrentPosition),
-      CurrentNodeLength = maps:get(length, CurrentNode),
-      calculate_dist_to_semaphore(Intersection, #{node_id=>NextNodeId, position_on_node=>1}, tl(PathToDest), Result + CurrentNodeLength - PositionOnCurrentNode+1)
-  end.
-
-
-%% TODO: move to separate module
--spec calculate_dist_to_car_ahead(intersection(), car()) -> non_neg_integer().
-calculate_dist_to_car_ahead(InitialIntersection, Car) ->
-  CarsOnInitialPosition = intersection:get_cars_on(maps:get(position, Car), InitialIntersection),
-  if
-    (length(CarsOnInitialPosition)>1) ->
-      0;
-    true ->
-      #{path_to_dest:=PathToDest, position:=InitialPosition, id:=CarId} = Car,
-      FullPathToDest = intersection:get_path_with_semaphores(maps:get(node_id, InitialPosition), PathToDest, InitialIntersection),
-      {NextPosition, RemainingPath} = intersection:next_position(InitialPosition, FullPathToDest, 1, InitialIntersection),
-      case {NextPosition, RemainingPath} of
-        {#{}, []} -> ?MAX_INT;
-        _ -> calculate_dist_to_car_ahead(InitialIntersection, Car, NextPosition, RemainingPath, 1)
-      end
-  end.
-
-%%calculate_dist_to_car_ahead(_Intersection, _Car, #{}, [], _Result) ->
-%%  TODO: problem when car
-%%  ?MAX_INT;
-
-calculate_dist_to_car_ahead(Intersection, Car, CurrentPosition, PathToDest, Result) ->
-  CurrentNode = maps:get(maps:get(node_id, CurrentPosition), Intersection),
-  PositionOnNode = maps:get(position_on_node, CurrentPosition),
-  CarsOnLane = maps:get(cars_on, CurrentNode),
-  CarsOnPosition = maps:get(PositionOnNode, CarsOnLane, []),
-  IsExaminedCarOnPosition = lists:member(maps:get(id, Car), CarsOnPosition),
-  if
-    length(CarsOnPosition) == 0 ->
-      case intersection:next_position(CurrentPosition, PathToDest, 1, Intersection) of
-        {#{}, []} -> ?MAX_INT;
-        {NextPosition, RemainingPath} ->
-          calculate_dist_to_car_ahead(Intersection, Car, NextPosition, RemainingPath, Result+1)
+    semaphore ->
+      LightEnablesToEnter = light_enables_to_enter(maps:get(node_id, PreviousPosition), maps:get(node_id, CurrentPosition), Intersection, Lights),
+      if
+        not LightEnablesToEnter ->
+          Result;
+        LightEnablesToEnter ->
+          {NextPosition, DistToNextNode} = dist_to_next_node(CurrentPosition, FullPathToDest, Intersection),
+          calculate_dist_to_first_blocking_semaphore(Intersection, NextPosition, CurrentPosition, tl(FullPathToDest), Lights, Result + DistToNextNode)
       end;
+    lane ->
+      {NextPosition, DistToNextNode} = dist_to_next_node(CurrentPosition, FullPathToDest, Intersection),
+      calculate_dist_to_first_blocking_semaphore(Intersection, NextPosition, tl(FullPathToDest), Lights, Result + DistToNextNode)
+  end.
+
+dist_to_next_node(CurrentPosition, FullPathToDest, Intersection) ->
+  [NextNodeId | _] = FullPathToDest,
+  NextPosition = #{node_id=>NextNodeId, position_on_node=>1},
+  CurrentNodeId = maps:get(node_id, CurrentPosition),
+  CurrentNodePosition = maps:get(position_on_node, CurrentPosition),
+  DistToNextNode = intersection:get_node_length(CurrentNodeId, Intersection) - CurrentNodePosition + 1,
+  {NextPosition, DistToNextNode}.
+
+light_enables_to_enter(FromId, ToId, Intersection, Lights) ->
+  ToNode = maps:get(ToId, Intersection),
+  IncomingNodes = maps:get(incoming_nodes, ToNode),
+  LightMarker = maps:get(ToId, Lights),
+  [FirstIncoming | _] = IncomingNodes,
+  if
+    FirstIncoming == FromId ->
+      LightMarker == ?GREEN_FOR_LOWER_ID;
     true ->
-      Result
+      LightMarker == ?GREEN_FOR_HIGHER_ID
   end.

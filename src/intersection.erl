@@ -1,7 +1,7 @@
 -module(intersection).
 
 %% API
--export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2]).
+-export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2]).
 
 -type car_id() :: integer().
 -type node_id() :: integer().
@@ -87,3 +87,4 @@ get_node_type(NodeId, Intersection) ->
 %% TODO: add spec and export
 get_node_length(NodeId, Intersection) ->
   maps:get(length, maps:get(NodeId, Intersection)).
+
