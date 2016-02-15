@@ -1,7 +1,7 @@
 -module(car).
 
 %% API
--export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2]).
+-export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2, get_max_velocity/1, get_max_acceleration/1, get_max_deceleration/1, move_car/2, set_velocity/2, set_config/2, get_id/1]).
 
 -type car() :: input:car().
 -type position() :: input:position().
@@ -9,9 +9,24 @@
 
 -define(MAX_INT, 134217727).
 
+get_id(Car) ->
+  maps:get(id, Car).
+
 -spec get_velocity(car()) -> non_neg_integer().
 get_velocity(Car) ->
   maps:get(velocity, Car).
+
+-spec get_max_velocity(car()) -> non_neg_integer().
+get_max_velocity(Car) ->
+  maps:get(max_velocity, maps:get(config, Car)).
+
+-spec get_max_acceleration(car()) -> pos_integer().
+get_max_acceleration(Car) ->
+  maps:get(max_acceleration, maps:get(config, Car)).
+
+-spec get_max_deceleration(car()) -> pos_integer().
+get_max_deceleration(Car) ->
+  maps:get(max_deceleration, maps:get(config, Car)).
 
 -spec get_position(car()) -> position().
 get_position(Car) ->
@@ -23,6 +38,13 @@ get_path_to_dest(Car) ->
 
 get_full_path(Car, Intersection) ->
   intersection:get_path_with_semaphores(maps:get(node_id, get_position(Car)), get_path_to_dest(Car), Intersection).
+
+-spec set_velocity(non_neg_integer(), car()) -> car().
+set_velocity(Velocity, Car) ->
+  maps:update(velocity, Velocity, Car).
+
+set_config(Config, Car) ->
+  maps:update(config, Config, Car).
 
 -spec calculate_dist_to_car_ahead(intersection(), car()) -> non_neg_integer().
 calculate_dist_to_car_ahead(InitialIntersection, Car) ->
@@ -55,3 +77,19 @@ calculate_dist_to_car_ahead(Intersection, Car, CurrentPosition, FullPathToDest, 
           Result
       end
   end.
+
+-spec move_car(car(), intersection()) -> {car(), intersection()}.
+move_car(Car, Intersection) ->
+  Position = car:get_position(Car),
+  PathToDest = car:get_path_to_dest(Car),
+  Velocity = car:get_velocity(Car),
+  {UpdatedPosition, RemainingPath} = intersection:next_position(Position, PathToDest, Velocity, Intersection),
+  IsMovedOutsideIntersection = maps:size(UpdatedPosition) == 0,
+  if
+    IsMovedOutsideIntersection ->
+      {outside_intersection, intersection:remove_car_from(get_id(Car), Position, Intersection)};
+    not IsMovedOutsideIntersection ->
+      UpdatedCar = maps:update(path_to_dest, RemainingPath, maps:update(position, UpdatedPosition, Car)),
+      UpdatedIntersection = intersection:move_car(get_id(Car), Position, UpdatedPosition, Intersection),
+      {UpdatedCar, UpdatedIntersection}
+end.

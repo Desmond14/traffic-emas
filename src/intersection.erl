@@ -1,7 +1,7 @@
 -module(intersection).
 
 %% API
--export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2]).
+-export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3]).
 
 -type car_id() :: integer().
 -type node_id() :: integer().
@@ -54,6 +54,20 @@ fits_in_lane(CurrentPosition, Intersection, DistanceToPass) ->
   NodeId = maps:get(node_id, CurrentPosition),
   PositionOnNode = maps:get(position_on_node, CurrentPosition),
   PositionOnNode + DistanceToPass =< get_node_length(NodeId, Intersection).
+
+move_car(CarId, OldPosition, NewPosition, Intersection) ->
+  add_car_on(CarId, NewPosition, remove_car_from(CarId, OldPosition, Intersection)).
+
+remove_car_from(CarId, Position, Intersection) ->
+  #{node_id := NodeId, position_on_node := PositionOnNode} = Position,
+  Node = maps:get(NodeId, Intersection),
+  maps:put(NodeId, remove_car_from_node(CarId, PositionOnNode, Node), Intersection).
+
+remove_car_from_node(CarId, PositionOnNode, Node) ->
+  CarsOnNodeMap = maps:get(cars_on, Node),
+  CarsOnPosition = maps:get(PositionOnNode, CarsOnNodeMap, []),
+  UpdatedCarsOnNode = maps:put(PositionOnNode, lists:delete(CarId, CarsOnPosition), CarsOnNodeMap),
+  Node#{cars_on => UpdatedCarsOnNode}.
 
 %% TODO: add doc
 -spec add_car_on(car_id(), position(), intersection()) -> intersection().

@@ -5,6 +5,7 @@
 
 -import(car, [calculate_dist_to_car_ahead/2]).
 
+-define(MAX_INT, 134217727).
 -include_lib("eunit/include/eunit.hrl").
 
 get_full_path_test() ->
@@ -36,6 +37,10 @@ calculates_dist_to_car_on_next_lane_test() ->
   [Car | _] = input:load_car_definitions(),
   calculate_dist_to_car_ahead_test(Intersection, maps:update(path_to_dest, car:get_full_path(Car, Intersection), Car), 7).
 
-%% TODO: add test case when no car ahead
+calculate_dist_as_max_int_when_no_car_ahead_test() ->
+  Intersection = input:load_intersection_definition(),
+  [Car | _] = input:load_car_definitions(),
+  calculate_dist_to_car_ahead_test(Intersection, maps:update(path_to_dest, car:get_full_path(Car, Intersection), Car), ?MAX_INT).
+
 calculate_dist_to_car_ahead_test(Intersection, Car, ExpectedResult) ->
   ?assertEqual(ExpectedResult, calculate_dist_to_car_ahead(Intersection, Car)).
