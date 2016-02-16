@@ -1,18 +1,18 @@
 -module(nasch).
 
 %% API
--export([follow_nasch/2]).
+-export([follow_nagel/4]).
 
 -type car_or_outside() :: input:car() | outside_intersection.
 -type car() :: input:car().
 -type position() :: input:position().
 -type intersection() :: input:intersection().
 
--spec follow_nasch(car(), intersection()) -> {car_or_outside(), intersection()}.
-follow_nasch(Car, Intersection) ->
-  DistToCarAhead = car:calculate_dist_to_car_ahead(Intersection, Car),
-  CarWithUpdatedVelocity = car:set_velocity(new_velocity(Car, DistToCarAhead), Car),
-  car:move_car(CarWithUpdatedVelocity, Intersection).
+-spec follow_nagel(car(), intersection(), intersection(), any()) -> {car_or_outside(), intersection()}.
+follow_nagel(Car, Intersection, UpdatedIntersection, Lights) ->
+  DistToBlocker = car:calculate_dist_to_blocker(Intersection, Car, Lights),
+  CarWithUpdatedVelocity = car:set_velocity(new_velocity(Car, DistToBlocker), Car),
+  car:move_car(CarWithUpdatedVelocity, UpdatedIntersection).
 
 new_velocity(Car, DistToCarAhead) ->
   Velocity = car:get_velocity(Car),

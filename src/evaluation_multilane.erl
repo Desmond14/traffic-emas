@@ -1,7 +1,7 @@
 -module(evaluation_multilane).
 
 %% API
--export([evaluate_solution/2, calculate_dist_to_first_blocking_semaphore/3]).
+-export([evaluate_solution/2]).
 
 -define(GREEN_FOR_LOWER_ID, 0).
 -define(BOTH_RED, 1).
@@ -61,14 +61,44 @@ move_one_car(_InitialIntersection, UpdatedIntersection, [], UpdatedCars, _Lights
 
 move_one_car(InitialIntersection, UpdatedIntersection, CarsToProcess, UpdatedCars, Lights, Distance) ->
   [Car | _] = CarsToProcess,
-%%  case is_in_safe_distance_to_blocking_semaphore(InitialIntersection, Car, Lights) of
-%%    true -> follow_nagel_schreckenberg()
-%%  end,
+  case is_in_safe_distance_to_blocking_semaphore(InitialIntersection, Car, Lights) of
+    true ->
+      nasch:follow_nagel(Car, InitialIntersection, UpdatedIntersection, Lights);
+    false ->
+      CanStopBefore = can_stop_before_blocker(InitialIntersection, Car, Lights),
+      if
+        CanStopBefore ->
+          decelerate_minimaly(InitialIntersection, UpdatedIntersection, Car, Lights);
+        not CanStopBefore ->
+          nasch:follow_nagel(Car, InitialIntersection, UpdatedIntersection, Lights)
+      end
+  end,
   move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), UpdatedCars, Lights, Distance).
+
+decelerate_minimaly(Intersection, UpdatedIntersection, Car, Lights) ->
+  DistToBlocker = car:calculate_dist_to_blocker(Intersection, Car, Lights),
+  DecelerateBy = minimal_deceleration_to_stop_before(DistToBlocker, Car),
+  car:move_car(car:set_velocity(car:get_velocity(Car)-DecelerateBy), UpdatedIntersection).
+
+minimal_deceleration_to_stop_before(DistToBlocker, Car) ->
+  minimal_deceleration_to_stop_before(DistToBlocker, Car, car:get_max_deceleration(Car)).
+
+minimal_deceleration_to_stop_before(DistToBlocker, Car, -1) ->
+  0;
+
+minimal_deceleration_to_stop_before(DistToBlocker, Car, DecelerateBy) ->
+  NewVelocity = max(0, car:get_velocity(Car)-DecelerateBy),
+  NewDistanceToBlocker = max(0, DistToBlocker-NewVelocity),
+  case can_stop_before_blocker(NewDistanceToBlocker, NewVelocity, car:get_max_velocity(Car), car:get_max_deceleration(Car)) of
+    true ->
+      minimal_deceleration_to_stop_before(DistToBlocker, Car, DecelerateBy-1);
+    false ->
+      DecelerateBy+1
+  end.
 
 is_in_safe_distance_to_blocking_semaphore(Intersection, Car, Lights) ->
   InitialVelocity = car:get_velocity(Car),
-  DistToBlockingSemaphore = calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
+  DistToBlockingSemaphore = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
   is_in_safe_distance_to_blocking_semaphore(InitialVelocity, DistToBlockingSemaphore).
 
 is_in_safe_distance_to_blocking_semaphore(0, Distance) ->
@@ -79,52 +109,14 @@ is_in_safe_distance_to_blocking_semaphore(Velocity, Distance) ->
   DistanceLeft = Distance - NewVelocity,
   is_in_safe_distance_to_blocking_semaphore(NewVelocity, DistanceLeft).
 
-calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights) ->
-  calculate_dist_to_first_blocking_semaphore(Intersection, maps:get(position,Car), maps:get(path_to_dest,Car), Lights, 0).
+can_stop_before_blocker(Intersection, Car, Lights) ->
+  DistToFirstBlocking = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
+  can_stop_before_blocker(DistToFirstBlocking, car:get_velocity(Car), car:get_max_velocity(Car), car:get_max_deceleration(Car)).
 
-calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, [], Lights, Result) ->
-  ?MAX_INT;
+can_stop_before_blocker(DistanceTo, 0, MaxVelocity, MaxDeceleration) ->
+  DistanceTo > 0;
 
-calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, FullPathToDest, Lights, Result) ->
-  {NextPosition, DistToNextNode} = dist_to_next_node(CurrentPosition, FullPathToDest, Intersection),
-  calculate_dist_to_first_blocking_semaphore(Intersection, NextPosition, CurrentPosition, tl(FullPathToDest), Lights, Result + DistToNextNode).
+can_stop_before_blocker(DistanceTo, Velocity, MaxVelocity, MaxDeceleration) ->
+  NewVelocity = max(0, Velocity-MaxDeceleration),
+  can_stop_before_blocker(DistanceTo-NewVelocity, NewVelocity, MaxVelocity, MaxDeceleration).
 
-calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, PreviousPosition, [], Lights, Result) ->
-  ?MAX_INT;
-
-calculate_dist_to_first_blocking_semaphore(Intersection, CurrentPosition, PreviousPosition, FullPathToDest, Lights, Result) ->
-  CurrentNode = maps:get(maps:get(node_id, CurrentPosition), Intersection),
-  case maps:get(type, CurrentNode) of
-    semaphore ->
-      LightEnablesToEnter = light_enables_to_enter(maps:get(node_id, PreviousPosition), maps:get(node_id, CurrentPosition), Intersection, Lights),
-      if
-        not LightEnablesToEnter ->
-          Result;
-        LightEnablesToEnter ->
-          {NextPosition, DistToNextNode} = dist_to_next_node(CurrentPosition, FullPathToDest, Intersection),
-          calculate_dist_to_first_blocking_semaphore(Intersection, NextPosition, CurrentPosition, tl(FullPathToDest), Lights, Result + DistToNextNode)
-      end;
-    lane ->
-      {NextPosition, DistToNextNode} = dist_to_next_node(CurrentPosition, FullPathToDest, Intersection),
-      calculate_dist_to_first_blocking_semaphore(Intersection, NextPosition, tl(FullPathToDest), Lights, Result + DistToNextNode)
-  end.
-
-dist_to_next_node(CurrentPosition, FullPathToDest, Intersection) ->
-  [NextNodeId | _] = FullPathToDest,
-  NextPosition = #{node_id=>NextNodeId, position_on_node=>1},
-  CurrentNodeId = maps:get(node_id, CurrentPosition),
-  CurrentNodePosition = maps:get(position_on_node, CurrentPosition),
-  DistToNextNode = intersection:get_node_length(CurrentNodeId, Intersection) - CurrentNodePosition + 1,
-  {NextPosition, DistToNextNode}.
-
-light_enables_to_enter(FromId, ToId, Intersection, Lights) ->
-  ToNode = maps:get(ToId, Intersection),
-  IncomingNodes = maps:get(incoming_nodes, ToNode),
-  LightMarker = maps:get(ToId, Lights),
-  [FirstIncoming | _] = IncomingNodes,
-  if
-    FirstIncoming == FromId ->
-      LightMarker == ?GREEN_FOR_LOWER_ID;
-    true ->
-      LightMarker == ?GREEN_FOR_HIGHER_ID
-  end.
