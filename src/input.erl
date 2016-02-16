@@ -21,13 +21,13 @@ load_intersection_definition() ->
   P8 = #{id=>3, type=>lane, incoming_nodes=>[4], outcoming_nodes=>[], cars_on=>#{}, next_lane_paths=>#{}, length=>5},
   S1 = #{id=>4, type=>semaphore, incoming_nodes=>[1,5], outcoming_nodes=>[3,8], cars_on=>#{}, length=>1},
   S2 = #{id=>5, type=>semaphore, incoming_nodes=>[6,9], outcoming_nodes=>[2,4], cars_on=>#{}, length=>1},
-  P3 = #{id=>6, type=>lane, incoming_nodes=>[], outcoming_nodes=>[5], cars_on=>#{1=>2}, next_lane_paths=>#{2=>[5,2], 3=>[5,4,3], 11=>[5,4,8,11]}, length=>5},
-  P7 = #{id=>7, type=>lane, incoming_nodes=>[], outcoming_nodes=>[8], cars_on=>#{1=>3}, next_lane_paths=>#{11=>[8,11], 10=>[8,9,10], 2=>[8,9,5,2]}, length=>5},
+  P3 = #{id=>6, type=>lane, incoming_nodes=>[], outcoming_nodes=>[5], cars_on=>#{1=>[2]}, next_lane_paths=>#{2=>[5,2], 3=>[5,4,3], 11=>[5,4,8,11]}, length=>5},
+  P7 = #{id=>7, type=>lane, incoming_nodes=>[], outcoming_nodes=>[8], cars_on=>#{1=>[3]}, next_lane_paths=>#{11=>[8,11], 10=>[8,9,10], 2=>[8,9,5,2]}, length=>5},
   S3 = #{id=>8, type=>semaphore, incoming_nodes=>[4,7], outcoming_nodes=>[9,11], cars_on=>#{}, length=>1},
   S4 = #{id=>9, type=>semaphore, incoming_nodes=>[8,12], outcoming_nodes=>[5,10], cars_on=>#{}, length=>1},
   P4 = #{id=>10, type=>lane, incoming_nodes=>[9], outcoming_nodes=>[], cars_on=>#{}, next_lane_paths=>#{}, length=>5},
   P6 = #{id=>11, type=>lane, incoming_nodes=>[8], outcoming_nodes=>[], cars_on=>#{}, next_lane_paths=>#{}, length=>5},
-  P5 = #{id=>12, type=>lane, incoming_nodes=>[], outcoming_nodes=>[9], cars_on=>#{1=>4}, next_lane_paths=>#{10=>[9,10], 2=>[9,5,2], 3=>[9,5,4,3]}, length=>5},
+  P5 = #{id=>12, type=>lane, incoming_nodes=>[], outcoming_nodes=>[9], cars_on=>#{1=>[4]}, next_lane_paths=>#{10=>[9,10], 2=>[9,5,2], 3=>[9,5,4,3]}, length=>5},
 
   #{
     1=>P1, 2=>P2, 3=>P8, 4=>S1, 5=>S2, 6=>P3, 7=>P7, 8=>S3, 9=>S4, 10=>P4, 11=>P6, 12=>P5

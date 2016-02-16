@@ -64,6 +64,7 @@ remove_car_from(CarId, Position, Intersection) ->
   maps:put(NodeId, remove_car_from_node(CarId, PositionOnNode, Node), Intersection).
 
 remove_car_from_node(CarId, PositionOnNode, Node) ->
+%%  io:format("Remove ~p from position ~p on Node ~p~n", [CarId, PositionOnNode, Node]),
   CarsOnNodeMap = maps:get(cars_on, Node),
   CarsOnPosition = maps:get(PositionOnNode, CarsOnNodeMap, []),
   UpdatedCarsOnNode = maps:put(PositionOnNode, lists:delete(CarId, CarsOnPosition), CarsOnNodeMap),
@@ -72,6 +73,7 @@ remove_car_from_node(CarId, PositionOnNode, Node) ->
 %% TODO: add doc
 -spec add_car_on(car_id(), position(), intersection()) -> intersection().
 add_car_on(CarId, Position, Intersection) ->
+%%  io:format("Adding car ~p on position ~p~n", [CarId, Position]),
   #{node_id := NodeId, position_on_node := PositionOnNode} = Position,
   Node = maps:get(NodeId, Intersection),
   maps:put(NodeId, add_car_on_node(CarId, PositionOnNode, Node), Intersection).

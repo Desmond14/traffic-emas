@@ -11,6 +11,7 @@
 -spec follow_nagel(car(), intersection(), intersection(), any()) -> {car_or_outside(), intersection()}.
 follow_nagel(Car, Intersection, UpdatedIntersection, Lights) ->
   DistToBlocker = car:calculate_dist_to_blocker(Intersection, Car, Lights),
+%%  io:format("CarId: ~p, DistToBlocker: ~p~n", [car:get_id(Car), DistToBlocker]),
   CarWithUpdatedVelocity = car:set_velocity(new_velocity(Car, DistToBlocker), Car),
   car:move_car(CarWithUpdatedVelocity, UpdatedIntersection).
 

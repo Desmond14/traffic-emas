@@ -1,7 +1,7 @@
 -module(evaluation_multilane).
 
 %% API
--export([evaluate_solution/2]).
+-export([evaluate_solution/2, move_cars/2]).
 
 -define(GREEN_FOR_LOWER_ID, 0).
 -define(BOTH_RED, 1).
@@ -19,7 +19,22 @@
 
 -spec evaluate_solution(solution(), data()) -> float().
 evaluate_solution(Solution, Data) ->
-  time_loop(Solution, Data, 0).
+  {Intersection, Cars} = Data,
+  NormalizedCars = convert_paths_to_full_paths(Cars, Intersection),
+  time_loop(Solution, {Intersection, NormalizedCars}, 0).
+
+-spec convert_paths_to_full_paths([car()], intersection()) -> [car()].
+convert_paths_to_full_paths(Cars, Intersection) ->
+  convert_one_car(Cars, [], Intersection).
+
+convert_one_car([], ConvertedCars, _Intersection) ->
+  ConvertedCars;
+
+convert_one_car(InitialCars, ConvertedCars, Intersection) ->
+  CarToConvert = hd(InitialCars),
+%%  io:format("Converting Car ~p", [CarToConvert]),
+  ConvertedCar = maps:update(path_to_dest, car:get_full_path(CarToConvert, Intersection), CarToConvert),
+  convert_one_car(tl(InitialCars), lists:append(ConvertedCars, [ConvertedCar]), Intersection).
 
 %% =============================================================================
 %% Internal functions
@@ -32,53 +47,51 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], Data, Result) ->
   {UpdatedData, Moves} = move_cars(Lights, Data),
+%%  io:format("Updated data ~p~n", [UpdatedData]),
   time_loop(Solution, UpdatedData, Result + Moves).
 
 %% @doc Launches the loop that tries to move all the cars that can be moved
 -spec move_cars(gene(), data()) -> {data(), float()}.
 move_cars(Lights, InitialData) ->
   {Intersection, Cars} = InitialData,
-  NormalizedCars = convert_paths_to_full_paths(Cars, Intersection),
-  move_one_car(Intersection, Intersection, NormalizedCars, NormalizedCars, Lights, 0).
-
--spec convert_paths_to_full_paths([car()], intersection()) -> [car()].
-convert_paths_to_full_paths(Cars, Intersection) ->
-  convert_one_car(Cars, [], Intersection).
-
-convert_one_car([], ConvertedCars, _Intersection) ->
-  ConvertedCars;
-
-convert_one_car(InitialCars, ConvertedCars, Intersection) ->
-  CarToConvert = hd(InitialCars),
-  ConvertedCar = maps:update(path_to_dest, car:get_full_path(CarToConvert, Intersection), CarToConvert),
-  convert_one_car(tl(InitialCars), lists:append(ConvertedCars, [ConvertedCar]), Intersection).
+  move_one_car(Intersection, Intersection, Cars, [], Lights, 0).
 
 %% @doc Iterate through all the cars and try to move them if there is space
 %% When no car can be moved, the iteration is finished
 -spec move_one_car(intersection(), intersection(), [car()], [car()], gene(), integer()) -> {data(), integer()}.
 move_one_car(_InitialIntersection, UpdatedIntersection, [], UpdatedCars, _Lights, Distance) ->
+%%  io:format("All cars moved. Updated cars: ~p~n", [UpdatedCars]),
   {{UpdatedIntersection, UpdatedCars}, Distance};
 
-move_one_car(InitialIntersection, UpdatedIntersection, CarsToProcess, UpdatedCars, Lights, Distance) ->
+move_one_car(InitialIntersection, IntersectionToUpdate, CarsToProcess, UpdatedCars, Lights, Distance) ->
   [Car | _] = CarsToProcess,
+%%  io:format("Moving car ~p~n", [Car]),
   case is_in_safe_distance_to_blocking_semaphore(InitialIntersection, Car, Lights) of
     true ->
-      nasch:follow_nagel(Car, InitialIntersection, UpdatedIntersection, Lights);
+      {UpdatedCar, UpdatedIntersection} = nasch:follow_nagel(Car, InitialIntersection, IntersectionToUpdate, Lights);
     false ->
       CanStopBefore = can_stop_before_blocker(InitialIntersection, Car, Lights),
       if
         CanStopBefore ->
-          decelerate_minimaly(InitialIntersection, UpdatedIntersection, Car, Lights);
+          {UpdatedCar, UpdatedIntersection} = decelerate_minimaly(InitialIntersection, IntersectionToUpdate, Car, Lights);
         not CanStopBefore ->
-          nasch:follow_nagel(Car, InitialIntersection, UpdatedIntersection, Lights)
+          {UpdatedCar, UpdatedIntersection} = nasch:follow_nagel(Car, InitialIntersection, IntersectionToUpdate, Lights)
       end
   end,
-  move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), UpdatedCars, Lights, Distance).
+  case UpdatedCar of
+    outside_intersection ->
+        io:format("Updated car:~p, UpdatedCars:~p~n", [UpdatedCar, UpdatedCars]),
+      move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), UpdatedCars, Lights, Distance + car:get_velocity(Car));
+    _ ->
+        io:format("Updated car:~p, UpdatedCars:~p~n", [UpdatedCar, UpdatedCars]),
+      move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), lists:append(UpdatedCars, [UpdatedCar]), Lights, Distance + car:get_velocity(UpdatedCar))
+  end.
+
 
 decelerate_minimaly(Intersection, UpdatedIntersection, Car, Lights) ->
   DistToBlocker = car:calculate_dist_to_blocker(Intersection, Car, Lights),
   DecelerateBy = minimal_deceleration_to_stop_before(DistToBlocker, Car),
-  car:move_car(car:set_velocity(car:get_velocity(Car)-DecelerateBy), UpdatedIntersection).
+  car:move_car(car:set_velocity(car:get_velocity(Car)-DecelerateBy, Car), UpdatedIntersection).
 
 minimal_deceleration_to_stop_before(DistToBlocker, Car) ->
   minimal_deceleration_to_stop_before(DistToBlocker, Car, car:get_max_deceleration(Car)).
@@ -111,7 +124,7 @@ is_in_safe_distance_to_blocking_semaphore(Velocity, Distance) ->
 
 can_stop_before_blocker(Intersection, Car, Lights) ->
   DistToFirstBlocking = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
-  can_stop_before_blocker(DistToFirstBlocking, car:get_velocity(Car), car:get_max_velocity(Car), car:get_max_deceleration(Car)).
+  can_stop_before_blocker(DistToFirstBlocking-car:get_velocity(Car), car:get_velocity(Car), car:get_max_velocity(Car), car:get_max_deceleration(Car)).
 
 can_stop_before_blocker(DistanceTo, 0, MaxVelocity, MaxDeceleration) ->
   DistanceTo > 0;

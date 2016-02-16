@@ -79,7 +79,7 @@ calculate_dist_to_car_ahead(Intersection, Car, CurrentPosition, FullPathToDest, 
       if
         length(CarsOnPosition) == 0 ->
           {NextPosition, RemainingPath} = intersection:next_position(CurrentPosition, FullPathToDest, 1, Intersection),
-          io:format("NextPosition: ~p, RemainingPath: ~p~n", [NextPosition, RemainingPath]),
+%%          io:format("NextPosition: ~p, RemainingPath: ~p~n", [NextPosition, RemainingPath]),
           calculate_dist_to_car_ahead(Intersection, Car, NextPosition, RemainingPath, Result+1);
         length(CarsOnPosition) > 0 ->
           Result
