@@ -6,7 +6,6 @@
 
 %% @doc Returns list of all consecutive node ids including both semaphores and lanes
 %% to go from lane InitialLane through lanes from list PathToDest
-%% TODO: handle situation when path is semi-full
 -spec get_path_with_semaphores(node_id(), [node_id()], intersection()) -> [node_id()].
 get_path_with_semaphores(InitialLane, PathToDest, Intersection) ->
   get_path_with_semaphores(InitialLane, PathToDest, [], Intersection).
@@ -60,16 +59,13 @@ remove_car_from(CarId, Position, Intersection) ->
   maps:put(NodeId, remove_car_from_node(CarId, PositionOnNode, Node), Intersection).
 
 remove_car_from_node(CarId, PositionOnNode, Node) ->
-%%  io:format("Remove ~p from position ~p on Node ~p~n", [CarId, PositionOnNode, Node]),
   CarsOnNodeMap = maps:get(cars_on, Node),
   CarsOnPosition = maps:get(PositionOnNode, CarsOnNodeMap, []),
   UpdatedCarsOnNode = maps:put(PositionOnNode, lists:delete(CarId, CarsOnPosition), CarsOnNodeMap),
   Node#{cars_on => UpdatedCarsOnNode}.
 
-%% TODO: add doc
 -spec add_car_on(car_id(), position(), intersection()) -> intersection().
 add_car_on(CarId, Position, Intersection) ->
-%%  io:format("Adding car ~p on position ~p~n", [CarId, Position]),
   #{node_id := NodeId, position_on_node := PositionOnNode} = Position,
   Node = maps:get(NodeId, Intersection),
   maps:put(NodeId, add_car_on_node(CarId, PositionOnNode, Node), Intersection).
@@ -92,11 +88,9 @@ get_cars_on(Position, Intersection) ->
 get_next_lane_path (From, To, Intersection) ->
   maps:get(To, maps:get(next_lane_paths, maps:get(From, Intersection))).
 
-%% TODO: add spec and export
 get_node_type(NodeId, Intersection) ->
   maps:get(type, maps:get(NodeId, Intersection)).
 
-%% TODO: add spec and export
 get_node_length(NodeId, Intersection) ->
   maps:get(length, maps:get(NodeId, Intersection)).
 

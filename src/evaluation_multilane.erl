@@ -21,8 +21,7 @@ convert_one_car([], ConvertedCars, _Intersection) ->
 
 convert_one_car(InitialCars, ConvertedCars, Intersection) ->
   CarToConvert = hd(InitialCars),
-%%  io:format("Converting Car ~p", [CarToConvert]),
-  ConvertedCar = maps:update(path_to_dest, car:get_full_path(CarToConvert, Intersection), CarToConvert),
+  ConvertedCar = car:set_path_to_dest(car:get_full_path(Intersection, CarToConvert), CarToConvert),
   convert_one_car(tl(InitialCars), lists:append(ConvertedCars, [ConvertedCar]), Intersection).
 
 %% =============================================================================
@@ -76,7 +75,7 @@ move_one_car(InitialIntersection, IntersectionToUpdate, CarsToProcess, UpdatedCa
 
 
 decelerate_minimaly(Intersection, UpdatedIntersection, Car, Lights) ->
-  DistToBlocker = car:calculate_dist_to_blocker(Intersection, Car, Lights),
+  DistToBlocker = car:calculate_dist_to_blocker(Intersection, Lights, Car),
   DecelerateBy = minimal_deceleration_to_stop_before(DistToBlocker, Car),
   car:move_car(car:set_velocity(car:get_velocity(Car)-DecelerateBy, Car), UpdatedIntersection).
 
