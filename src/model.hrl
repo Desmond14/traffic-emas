@@ -15,3 +15,6 @@
 -type car() :: #{id=>car_id(), position=>position(), velocity=>non_neg_integer(), config=>car_config(), path_to_dest=>[node_id()]}.
 -type intersection() :: map().
 -type input() :: {intersection(), [car()]}.
+-type node_type() :: semaphore | lane.
+%% TODO: define more accurately node and car type
+-type intersection_node() :: map().
