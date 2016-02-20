@@ -1,14 +1,12 @@
 -module(nasch).
-
-%% API
 -export([follow_nagel/4]).
+-export_type([optional_car/0]).
 
--type car_or_outside() :: input:car() | outside_intersection.
--type car() :: input:car().
--type position() :: input:position().
--type intersection() :: input:intersection().
+-include("model.hrl").
 
--spec follow_nagel(car(), intersection(), intersection(), any()) -> {car_or_outside(), intersection()}.
+-type optional_car() :: input:car() | outside_intersection.
+
+-spec follow_nagel(car(), intersection(), intersection(), any()) -> {optional_car(), intersection()}.
 follow_nagel(Car, Intersection, UpdatedIntersection, Lights) ->
   DistToBlocker = car:calculate_dist_to_blocker(Intersection, Car, Lights),
 %%  io:format("CarId: ~p, DistToBlocker: ~p~n", [car:get_id(Car), DistToBlocker]),

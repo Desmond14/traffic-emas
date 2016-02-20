@@ -1,17 +1,7 @@
 -module(car).
-
-%% API
 -export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2, get_max_velocity/1, get_max_acceleration/1, get_max_deceleration/1, move_car/2, set_velocity/2, set_config/2, get_id/1, calculate_dist_to_first_blocking_semaphore/3, calculate_dist_to_blocker/3]).
 
--define(GREEN_FOR_LOWER_ID, 0).
--define(BOTH_RED, 1).
--define(GREEN_FOR_HIGHER_ID, 2).
-
--type car() :: input:car().
--type position() :: input:position().
--type intersection() :: input:intersection().
-
--define(MAX_INT, 134217727).
+-include("model.hrl").
 
 get_id(Car) ->
   maps:get(id, Car).

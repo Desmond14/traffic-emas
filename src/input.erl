@@ -1,15 +1,9 @@
 -module(input).
-
-%% API
 -export([load_intersection_definition/0, load_car_definitions/0, load_data/0]).
 
--type position() :: #{node_id=>integer(), position_on_node=>non_neg_integer()}.
--type car_config() :: #{max_velocity=>pos_integer(), max_acceleration=>pos_integer(), max_deceleration=>pos_integer()}.
--type car() :: #{id=>integer(), position=>position(), velocity=>non_neg_integer(), config=>car_config(), path_to_dest=>list()}.
--type intersection() :: map().
--type data() :: {intersection(), [car()]}.
+-include("model.hrl").
 
--spec load_data() -> data().
+-spec load_data() -> input().
 load_data() ->
   {load_intersection_definition(), load_car_definitions()}.
 
@@ -34,7 +28,7 @@ load_intersection_definition() ->
   }.
 
 
--spec load_car_definitions() -> list().
+-spec load_car_definitions() -> [car()].
 load_car_definitions() ->
   CarConfig = #{max_velocity=>4, max_acceleration=>1, max_deceleration=>2},
   Car1 = #{id=>1, position=>#{node_id=>1, position_on_node=>1}, velocity=>1, config=>CarConfig, path_to_dest=>[11]},

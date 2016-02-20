@@ -1,23 +1,12 @@
 -module(evaluation_multilane).
-
-%% API
 -export([evaluate_solution/2, move_cars/2]).
 
--define(GREEN_FOR_LOWER_ID, 0).
--define(BOTH_RED, 1).
--define(GREEN_FOR_HIGHER_ID, 2).
+-include("model.hrl").
 
--type trit() :: ?GREEN_FOR_LOWER_ID | ?BOTH_RED | ?GREEN_FOR_HIGHER_ID.
--type gene() :: map().
+-type gene() :: #{node_id()=>trit()}.
 -type solution() :: [gene()].
--type intersection() :: input:intersection().
--type data() :: input:data().
 
--type car() :: input:car().
-
--define(MAX_INT, 134217727).
-
--spec evaluate_solution(solution(), data()) -> float().
+-spec evaluate_solution(solution(), input()) -> float().
 evaluate_solution(Solution, Data) ->
   {Intersection, Cars} = Data,
   NormalizedCars = convert_paths_to_full_paths(Cars, Intersection),
@@ -41,7 +30,7 @@ convert_one_car(InitialCars, ConvertedCars, Intersection) ->
 %% =============================================================================
 
 %% @doc Main loop which iterates through the solution genes
--spec time_loop(solution(), data(), float()) -> float().
+-spec time_loop(solution(), input(), float()) -> float().
 time_loop([], _, Result) ->
   Result;
 
@@ -51,14 +40,14 @@ time_loop([Lights | Solution], Data, Result) ->
   time_loop(Solution, UpdatedData, Result + Moves).
 
 %% @doc Launches the loop that tries to move all the cars that can be moved
--spec move_cars(gene(), data()) -> {data(), float()}.
+-spec move_cars(gene(), input()) -> {input(), float()}.
 move_cars(Lights, InitialData) ->
   {Intersection, Cars} = InitialData,
   move_one_car(Intersection, Intersection, Cars, [], Lights, 0).
 
 %% @doc Iterate through all the cars and try to move them if there is space
 %% When no car can be moved, the iteration is finished
--spec move_one_car(intersection(), intersection(), [car()], [car()], gene(), integer()) -> {data(), integer()}.
+-spec move_one_car(intersection(), intersection(), [car()], [car()], gene(), integer()) -> {input(), integer()}.
 move_one_car(_InitialIntersection, UpdatedIntersection, [], UpdatedCars, _Lights, Distance) ->
 %%  io:format("All cars moved. Updated cars: ~p~n", [UpdatedCars]),
   {{UpdatedIntersection, UpdatedCars}, Distance};
@@ -80,10 +69,8 @@ move_one_car(InitialIntersection, IntersectionToUpdate, CarsToProcess, UpdatedCa
   end,
   case UpdatedCar of
     outside_intersection ->
-        io:format("Updated car:~p, UpdatedCars:~p~n", [UpdatedCar, UpdatedCars]),
       move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), UpdatedCars, Lights, Distance + car:get_velocity(Car));
     _ ->
-        io:format("Updated car:~p, UpdatedCars:~p~n", [UpdatedCar, UpdatedCars]),
       move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), lists:append(UpdatedCars, [UpdatedCar]), Lights, Distance + car:get_velocity(UpdatedCar))
   end.
 

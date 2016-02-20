@@ -1,12 +1,8 @@
 -module(intersection).
-
-%% API
 -export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3]).
 
--type car_id() :: integer().
--type node_id() :: integer().
--type position() :: #{node_id=>node_id(), position_on_node=>pos_integer()}.
--type intersection() :: map().
+-include("model.hrl").
+
 
 %% @doc Returns list of all consecutive node ids including both semaphores and lanes
 %% to go from lane InitialLane through lanes from list PathToDest
@@ -15,7 +11,7 @@
 get_path_with_semaphores(InitialLane, PathToDest, Intersection) ->
   get_path_with_semaphores(InitialLane, PathToDest, [], Intersection).
 
-get_path_with_semaphores(InitialLane, [], Result, Intersection) ->
+get_path_with_semaphores(_InitialLane, [], Result, _Intersection) ->
   Result;
 
 get_path_with_semaphores(InitialLane, PathToDest, Result, Intersection) ->
@@ -26,7 +22,7 @@ get_path_with_semaphores(InitialLane, PathToDest, Result, Intersection) ->
 %% from CurrentPosition by DistanceToPass cells using PathToDest full path or tuple with
 %% empty map and empty path if next position is outside Intersection.
 -spec next_position(position(), [node_id()], intersection(), non_neg_integer()) -> {position(), [node_id()]}.
-next_position(CurrentPosition, PathToDest, 0, Intersection) ->
+next_position(CurrentPosition, PathToDest, 0, _Intersection) ->
   {CurrentPosition, PathToDest};
 
 next_position(CurrentPosition, PathToDest, DistanceToPass, Intersection) ->

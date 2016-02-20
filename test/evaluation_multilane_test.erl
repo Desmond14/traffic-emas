@@ -16,3 +16,10 @@ move_cars2_test() ->
   Data = input:load_data(),
   ?assertEqual(25, evaluation_multilane:evaluate_solution(Lights, Data)).
 
+move_cars3_test() ->
+  GreenPartiallyForCarId3 = #{4=>2, 5=>0, 8=>1, 9=>1},
+  Lights = [GreenPartiallyForCarId3, GreenPartiallyForCarId3, GreenPartiallyForCarId3, GreenPartiallyForCarId3, GreenPartiallyForCarId3],
+  Data = input:load_data(),
+  ?assertEqual(18, evaluation_multilane:evaluate_solution(Lights, Data)).
+
+
