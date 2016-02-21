@@ -54,17 +54,16 @@ set_path_to_dest(PathToDest, Car) ->
   maps:update(path_to_dest, PathToDest, Car).
 
 %% @doc Moves car to the next position on intersection. Returns tuple with car and intersection, both updated.
--spec move_car(car(), intersection()) -> {car(), intersection()}.
+-spec move_car(car(), intersection()) -> {optional_car(), intersection()}.
 move_car(Car, Intersection) ->
   Position = car:get_position(Car),
   PathToDest = car:get_path_to_dest(Car),
   Velocity = car:get_velocity(Car),
   {UpdatedPosition, RemainingPath} = intersection:next_position(Position, PathToDest, Velocity, Intersection),
-  IsMovedOutsideIntersection = maps:size(UpdatedPosition) == 0,
-  if
-    IsMovedOutsideIntersection ->
+  case UpdatedPosition of
+    outside_intersection ->
       {outside_intersection, intersection:remove_car_from(get_id(Car), Position, Intersection)};
-    not IsMovedOutsideIntersection ->
+    _ ->
       UpdatedCar = maps:update(path_to_dest, RemainingPath, maps:update(position, UpdatedPosition, Car)),
       UpdatedIntersection = intersection:move_car(get_id(Car), Position, UpdatedPosition, Intersection),
       {UpdatedCar, UpdatedIntersection}
@@ -85,9 +84,15 @@ calculate_dist_to_car_ahead(InitialIntersection, Car) ->
     true ->
       #{path_to_dest:=FullPathToDest, position:=InitialPosition} = Car,
       {NextPosition, RemainingPath} = intersection:next_position(InitialPosition, FullPathToDest, 1, InitialIntersection),
-      calculate_dist_to_car_ahead(InitialIntersection, Car, NextPosition, RemainingPath, 1)
+      case NextPosition of
+        outside_intersection ->
+          ?MAX_INT;
+        _ ->
+          calculate_dist_to_car_ahead(InitialIntersection, Car, NextPosition, RemainingPath, 1)
+      end
   end.
 
+%% TODO: move car argument at the end
 -spec calculate_dist_to_first_blocking_semaphore(intersection(), car(), any()) -> non_neg_integer().
 calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights) ->
   calculate_dist_to_first_blocking_semaphore(Intersection, maps:get(position,Car), maps:get(path_to_dest,Car), Lights, 0).
@@ -98,23 +103,22 @@ calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights) ->
 
 -spec calculate_dist_to_car_ahead(intersection(), car(), position(), [node_id()], non_neg_integer()) -> non_neg_integer().
 calculate_dist_to_car_ahead(Intersection, Car, CurrentPosition, FullPathToDest, Result) ->
-  MapSize = maps:size(CurrentPosition),
-  if
-    MapSize == 0 ->
-      ?MAX_INT;
-    MapSize > 0 ->
-      CurrentNode = maps:get(maps:get(node_id, CurrentPosition), Intersection),
-      PositionOnNode = maps:get(position_on_node, CurrentPosition),
-      CarsOnLane = maps:get(cars_on, CurrentNode),
-      CarsOnPosition = maps:get(PositionOnNode, CarsOnLane, []),
-      if
-        length(CarsOnPosition) == 0 ->
-          {NextPosition, RemainingPath} = intersection:next_position(CurrentPosition, FullPathToDest, 1, Intersection),
-          calculate_dist_to_car_ahead(Intersection, Car, NextPosition, RemainingPath, Result+1);
-        length(CarsOnPosition) > 0 ->
-          Result
-      end
-  end.
+    CurrentNode = maps:get(maps:get(node_id, CurrentPosition), Intersection),
+    PositionOnNode = maps:get(position_on_node, CurrentPosition),
+    CarsOnLane = maps:get(cars_on, CurrentNode),
+    CarsOnPosition = maps:get(PositionOnNode, CarsOnLane, []),
+    if
+      length(CarsOnPosition) == 0 ->
+        {NextPosition, RemainingPath} = intersection:next_position(CurrentPosition, FullPathToDest, 1, Intersection),
+        case NextPosition of
+          outside_intersection ->
+            ?MAX_INT;
+          _ ->
+            calculate_dist_to_car_ahead(Intersection, Car, NextPosition, RemainingPath, Result+1)
+        end;
+      length(CarsOnPosition) > 0 ->
+        Result
+    end.
 
 -spec calculate_dist_to_first_blocking_semaphore(intersection(), position(), [node_id()], lights(), non_neg_integer()) -> non_neg_integer().
 calculate_dist_to_first_blocking_semaphore(_Intersection, _CurrentPosition, [], _Lights, _Result) ->

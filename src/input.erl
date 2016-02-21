@@ -7,7 +7,6 @@
 load_data() ->
   {load_intersection_definition(), load_car_definitions()}.
 
-%TODO: add function to load data
 -spec load_intersection_definition() -> intersection().
 load_intersection_definition() ->
   P1 = #{id=>1, type=>lane, incoming_nodes=>[], outcoming_nodes=>[4], cars_on=>#{1=>[1]}, next_lane_paths=>#{3=>[4,3], 11=>[4,8,11], 10=>[4,8,9,10]}, length=>5},

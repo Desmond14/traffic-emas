@@ -2,8 +2,11 @@
 
 -module(intersection).
 -export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3]).
+-export_type([optional_position/0]).
 
 -include("model.hrl").
+
+-type optional_position() :: position() | outside_intersection.
 
 -spec get_node_type(node_id(), intersection()) -> node_type().
 get_node_type(NodeId, Intersection) ->
@@ -33,8 +36,8 @@ get_next_lane_path (From, To, Intersection) ->
 
 %% @doc Returns tuple with next position and remaining path to destination when moving
 %% from CurrentPosition by DistanceToPass cells using PathToDest full path or tuple with
-%% empty map and empty path if next position is outside Intersection.
--spec next_position(position(), [node_id()], non_neg_integer(), intersection()) -> {position(), [node_id()]}.
+%% outside_intersection atom and empty path if next position is outside Intersection.
+-spec next_position(position(), [node_id()], non_neg_integer(), intersection()) -> {optional_position(), [node_id()]}.
 next_position(CurrentPosition, PathToDest, 0, _Intersection) ->
   {CurrentPosition, PathToDest};
 
@@ -55,7 +58,7 @@ next_position(CurrentPosition, PathToDest, DistanceToPass, Intersection) ->
           DistanceLeft = DistanceToPass-get_node_length(NodeId, Intersection)+PositionOnNode-1,
           next_position(NextNodeBeginning, tl(PathToDest), DistanceLeft, Intersection);
         true ->
-          {maps:new(), []}
+          {outside_intersection, []}
       end
   end.
 

@@ -52,9 +52,9 @@ returns_next_position_on_semaphore_test() ->
   ExpectedRemainingPath = [11],
   next_position_test(InitialPosition, [8, 11], 2, {ExpectedPosition, ExpectedRemainingPath}).
 
-returns_empty_map_and_list_for_next_position_outside_intersection_test() ->
+returns_outside_intersection_and_empty_list_for_next_position_outside_intersection_test() ->
   InitialPosition = #{node_id=>7, position_on_node=>4},
-  ExpectedPosition = maps:new(),
+  ExpectedPosition = outside_intersection,
   ExpectedRemainingPath = [],
   next_position_test(InitialPosition, [8, 11], 8, {ExpectedPosition, ExpectedRemainingPath}).
 

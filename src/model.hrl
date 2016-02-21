@@ -13,8 +13,9 @@
 -type position() :: #{node_id=>node_id(), position_on_node=>non_neg_integer()}.
 -type car_config() :: #{max_velocity=>pos_integer(), max_acceleration=>pos_integer(), max_deceleration=>pos_integer()}.
 -type car() :: #{id=>car_id(), position=>position(), velocity=>non_neg_integer(), config=>car_config(), path_to_dest=>[node_id()]}.
+-type optional_car() :: car() | outside_intersection.
 -type intersection() :: map().
 -type input() :: {intersection(), [car()]}.
 -type node_type() :: semaphore | lane.
-%% TODO: define more accurately node and car type
+%% TODO: define more accurately node and intersection type
 -type intersection_node() :: map().
