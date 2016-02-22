@@ -7,29 +7,12 @@
 -type solution() :: [gene()].
 
 -spec evaluate_solution(solution(), input()) -> float().
-evaluate_solution(Solution, Data) ->
-  {Intersection, Cars} = Data,
-  NormalizedCars = convert_paths_to_full_paths(Cars, Intersection),
-  time_loop(Solution, {Intersection, NormalizedCars}, 0).
+evaluate_solution(Solution, {Intersection, Cars}) ->
+  time_loop(Solution, {Intersection, Cars}, 0).
 
 %% =============================================================================
 %% Internal functions
 %% =============================================================================
-
-%% @doc Replaces simple paths (with only lane ids) to full paths for each car.
-%% Returns cars with paths updated.
--spec convert_paths_to_full_paths([car()], intersection()) -> [car()].
-convert_paths_to_full_paths(Cars, Intersection) ->
-  convert_one_car(Cars, [], Intersection).
-
--spec convert_one_car([car()], [car()], intersection()) -> [car()].
-convert_one_car([], ConvertedCars, _Intersection) ->
-  ConvertedCars;
-
-convert_one_car(InitialCars, ConvertedCars, Intersection) ->
-  CarToConvert = hd(InitialCars),
-  ConvertedCar = car:set_path_to_dest(car:get_full_path(Intersection, CarToConvert), CarToConvert),
-  convert_one_car(tl(InitialCars), lists:append(ConvertedCars, [ConvertedCar]), Intersection).
 
 %% @doc Main loop which iterates through the solution genes
 -spec time_loop(solution(), input(), float()) -> float().

@@ -2,11 +2,8 @@
 
 -module(intersection).
 -export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3]).
--export_type([optional_position/0]).
 
 -include("model.hrl").
-
--type optional_position() :: position() | outside_intersection.
 
 -spec get_node_type(node_id(), intersection()) -> node_type().
 get_node_type(NodeId, Intersection) ->

@@ -6,7 +6,7 @@
 
 
 get_path_to_next_lane_test() ->
-  Intersection = input:load_intersection_definition(),
+  Intersection = input:load_intersection_definition("basic.intersection"),
   Result = intersection:get_next_lane_path(1, 10, Intersection),
   ?assertEqual([4,8,9,10], Result).
 
@@ -19,7 +19,7 @@ gets_empty_path_with_semaphores_when_path_to_dest_is_empty_test() ->
   get_path_with_semaphores_test(6, [], []).
 
 get_path_with_semaphores_test(NodeId, PathToDest, ExpectedPathWithSemaphores) ->
-  Intersection = input:load_intersection_definition(),
+  Intersection = input:load_intersection_definition("basic.intersection"),
   Result = get_path_with_semaphores(NodeId, PathToDest, Intersection),
   ?assertEqual(ExpectedPathWithSemaphores, Result).
 
@@ -30,7 +30,7 @@ gets_semaphore_node_type_test() ->
   gets_node_type_test(5, semaphore).
 
 gets_node_type_test(NodeId, ExpectedType) ->
-  Intersection = input:load_intersection_definition(),
+  Intersection = input:load_intersection_definition("basic.intersection"),
   Result = get_node_type(NodeId, Intersection),
   ?assertEqual(ExpectedType, Result).
 
@@ -65,7 +65,7 @@ returns_next_position_on_next_semaphore_test() ->
   next_position_test(InitialPosition, [9, 10], 1, {ExpectedPosition, ExpectedRemainingPath}).
 
 next_position_test(InitialPosition, PathToDest, DistanceToPass, ExpectedNextPosition) ->
-  Intersection = input:load_intersection_definition(),
+  Intersection = input:load_intersection_definition("basic.intersection"),
   Result = intersection:next_position(InitialPosition, PathToDest, DistanceToPass, Intersection),
   ?assertEqual(ExpectedNextPosition, Result).
 
@@ -86,7 +86,7 @@ adds_car_on_semaphore_test() ->
   add_car_on_test(5, #{node_id=>4, position_on_node=>1}, ExpectedCarsOnNode).
 
 add_car_on_test(CarId, PositionToAddOn, ExpectedCarsOnNode) ->
-  Intersection = input:load_intersection_definition(),
+  Intersection = input:load_intersection_definition("basic.intersection"),
   UpadtedIntersection = intersection:add_car_on(CarId, PositionToAddOn, Intersection),
   #{node_id := NodeId} = PositionToAddOn,
   ActualCarsOnNode = maps:get(cars_on, maps:get(NodeId, UpadtedIntersection)),
@@ -99,6 +99,6 @@ gets_not_empty_list_for_cars_on_test() ->
   get_cars_on_test(#{node_id=>1, position_on_node=>1}, [1]).
 
 get_cars_on_test(Position, ExpectedResult) ->
-  Intersection = input:load_intersection_definition(),
+  Intersection = input:load_intersection_definition("basic.intersection"),
   Result = intersection:get_cars_on(Position, Intersection),
   ?assertEqual(ExpectedResult, Result).
