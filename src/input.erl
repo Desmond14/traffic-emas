@@ -37,7 +37,6 @@ convert_one_car(InitialCars, ConvertedCars, Intersection) ->
 evaluate_file(Filename) ->
   ProjectPath = filename:dirname(filename:dirname(code:which(?MODULE))),
   FilePath = filename:join([ProjectPath, priv, Filename]),
-  io:format("Priv dir is ~p~n", [FilePath]),
   {ok, File} = file:read_file(FilePath),
   Content = unicode:characters_to_list(File),
   {ok,ErlTokens,_} = erl_scan:string(Content),

@@ -9,7 +9,3 @@ load1_test() ->
 load2_test() ->
   Result = input:load_car_definitions("basic.cars"),
   ?assertEqual(length(Result), 4).
-
-should_load_from_file_test() ->
-  Result = input:load_intersection_definition("basic.intersection"),
-  ?assertEqual(maps:size(Result), 12).

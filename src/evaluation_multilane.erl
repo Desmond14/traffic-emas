@@ -7,8 +7,8 @@
 -type solution() :: [gene()].
 
 -spec evaluate_solution(solution(), input()) -> float().
-evaluate_solution(Solution, {Intersection, Cars}) ->
-  time_loop(Solution, {Intersection, Cars}, 0).
+evaluate_solution(Solution, Data) ->
+  time_loop(Solution, Data, 0).
 
 %% =============================================================================
 %% Internal functions
