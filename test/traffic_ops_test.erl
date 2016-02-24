@@ -15,5 +15,5 @@ should_recombine_test() ->
   InitialSolution = traffic_ops:solution(SimParams),
   InitialSolution2 = traffic_ops:solution(SimParams),
   io:format("~p~n~p~n", [InitialSolution, InitialSolution2]),
-  io:format("~p~n", [traffic_ops:recombination(InitialSolution, InitialSolution2, SimParams)]),
+  io:format("~p~n", [traffic_ops:recombination(InitialSolution, InitialSolution2, SimParams)]).
 %%  ?assertEqual(false, true).

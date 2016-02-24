@@ -5,9 +5,10 @@
 
 -spec load(string(), string()) -> input().
 load(IntersectionFilename, CarsFilename) ->
-  Intersection = load_intersection_definition(IntersectionFilename),
+  Intersection = convert_to_map(load_intersection_definition(IntersectionFilename)),
+  NormalizedIntersection = intersection:normalize(Intersection),
   Cars = convert_paths_to_full_paths(load_car_definitions(CarsFilename), Intersection),
-  {Intersection, Cars}.
+  {add_cars_on(Cars, calculate_incoming_nodes(NormalizedIntersection)), Cars}.
 
 load_intersection_definition(Filename) ->
   evaluate_file(Filename).
@@ -18,6 +19,37 @@ load_car_definitions(Filename) ->
 %% =============================================================================
 %% Internal functions
 %% =============================================================================
+
+-spec convert_to_map([intersection_node()]) -> intersection().
+convert_to_map(NodesDescription) ->
+  convert_to_map(NodesDescription, maps:new()).
+
+-spec convert_to_map([intersection_node()], intersection()) -> intersection().
+convert_to_map([], Intersection) ->
+  Intersection;
+
+convert_to_map([NodeDescription | Rest], Intersection) ->
+  convert_to_map(Rest, maps:put(intersection:get_node_id(NodeDescription), NodeDescription, Intersection)).
+
+-spec calculate_incoming_nodes(intersection()) -> intersection().
+calculate_incoming_nodes(Intersection) ->
+  calculate_incoming_nodes(maps:values(Intersection), Intersection).
+
+calculate_incoming_nodes([], Intersection) ->
+  intersection:normalize_incoming_nodes(Intersection);
+
+calculate_incoming_nodes([Node | Rest], Intersection) ->
+  #{outcoming_nodes := OutcomingNodes, id := NodeId} = Node,
+  calculate_incoming_nodes(Rest, intersection:add_incoming_nodes(NodeId, OutcomingNodes, Intersection)).
+
+-spec add_cars_on([car()], intersection()) -> intersection().
+add_cars_on([], Intersection) ->
+  Intersection;
+
+add_cars_on([Car | Cars], Intersection) ->
+  CarId = car:get_id(Car),
+  Position = car:get_position(Car),
+  add_cars_on(Cars, intersection:add_car_on(CarId, Position, Intersection)).
 
 %% @doc Replaces simple paths (with only lane ids) to full paths for each car.
 %% Returns cars with paths updated.
