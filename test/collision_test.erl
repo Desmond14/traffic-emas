@@ -3,15 +3,25 @@
 -include_lib("eunit/include/eunit.hrl").
 
 should_return_false_for_empty_car_lists_test() ->
-  Intersection = input:load_intersection_definition("basic.intersection"),
+  Intersection = input:load_intersection_definition("test/collision/test.intersection"),
   ?assertEqual(false, collision:collision_occured({Intersection, []}, [])).
 
-%%should_return_false_test() ->
-%%  Intersection = input:load_intersection_definition("basic.intersection"),
-%%  Cars = input:load_car_definitions("basic.cars"),
-%%  UpdatedCars = [#{id=>1, position=>#{node_id=>1, position_on_node=>2}, path_to_dest=>[4,8,11]},
-%%  Car2 = #{id=>2, position=>#{node_id=>6, position_on_node=>1}, velocity=>1, config=>CarConfig, path_to_dest=>[11]},
-%%  Car3 = #{id=>3, position=>#{node_id=>7, position_on_node=>1}, velocity=>1, config=>CarConfig, path_to_dest=>[2]},
-%%  Car4 = #{id=>4, position=>#{node_id=>12, position_on_node=>1}, velocity=>1, config=>CarConfig, path_to_dest=>[3]},
-%%  [Car1, Car2, Car3, Car4].
-%%  car:move_car()
+should_detect_collision_on_intersection_when_cars_drive_to_the_same_cell_test() ->
+  Input = input:load("test/collision/test3.intersection", "test/collision/test3.cars"),
+  UpdatedCars = util:evaluate_file("test/collision/test3.cars_updated"),
+  ?assertEqual(true, collision:collision_occured(Input, UpdatedCars)).
+
+should_detect_collision_when_cars_cross_the_same_cell_test() ->
+  Input = input:load("test/collision/test2.intersection", "test/collision/test2.cars"),
+  UpdatedCars = util:evaluate_file("test/collision/test2.cars_updated"),
+  ?assertEqual(true, collision:collision_occured(Input, UpdatedCars)).
+
+should_detect_collision_when_faster_car_drives_on_slower_test() ->
+  Input = input:load("test/collision/test4.intersection", "test/collision/test4.cars"),
+  UpdatedCars = util:evaluate_file("test/collision/test4.cars_updated"),
+  ?assertEqual(true, collision:collision_occured(Input, UpdatedCars)).
+
+should_not_detect_collision_test() ->
+  Input = input:load("test/collision/test5.intersection", "test/collision/test5.cars"),
+  UpdatedCars = util:evaluate_file("test/collision/test5.cars_updated"),
+  ?assertEqual(false, collision:collision_occured(Input, UpdatedCars)).

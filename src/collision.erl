@@ -5,7 +5,7 @@
 
 -type positions_counter() :: #{position()=>pos_integer()}.
 
--spec collision_occured(input(), input()) -> boolean().
+-spec collision_occured(input(), [car()]) -> boolean().
 collision_occured({InitialIntersection, InitialCars}, UpdatedCars) ->
   VisitedPositions = mark_visited_positions(InitialCars, UpdatedCars, InitialIntersection),
   collision_occured(VisitedPositions).
@@ -37,6 +37,9 @@ mark_visited_positions(InitialCars, UpdatedCars, Intersection) ->
   end.
 
 -spec mark_visited_positions([car()], [car()], intersection(), positions_counter()) -> positions_counter().
+mark_visited_positions(_InitialCars, [], _Intersection, VisitedPositions) ->
+  VisitedPositions;
+
 mark_visited_positions([Car | InitialCars], [UpdatedCar | UpdatedCars], Intersection, VisitedPositions) ->
   UpdatedCarId = car:get_id(UpdatedCar),
   case car:get_id(Car) of

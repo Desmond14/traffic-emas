@@ -1,0 +1,12 @@
+[
+       #{config => #{max_acceleration => 1,max_deceleration => 2,max_velocity => 4},
+         id => 1,
+         path_to_dest => [11],
+         position => #{node_id => 4,position_on_node => 1},
+         velocity => 3},
+       #{config => #{max_acceleration => 1,max_deceleration => 1,max_velocity => 4},
+         id => 2,
+         path_to_dest => [3],
+         position => #{node_id => 4,position_on_node => 1},
+         velocity => 4}
+].
