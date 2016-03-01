@@ -1,7 +1,7 @@
 %% @doc A module contains utility functions to operate on car data structure. All API functions should take car() type as a last argument.
 
 -module(car).
--export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2, get_max_velocity/1, get_max_acceleration/1, get_max_deceleration/1, move_car/2, set_velocity/2, set_config/2, get_id/1, calculate_dist_to_first_blocking_semaphore/3, calculate_dist_to_blocker/3, get_node_id/1, set_path_to_dest/2]).
+-export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2, get_max_velocity/1, get_max_acceleration/1, get_max_deceleration/1, move_car/2, set_velocity/2, set_config/2, get_id/1, calculate_dist_to_first_blocking_semaphore/3, calculate_dist_to_blocker/3, get_node_id/1, set_path_to_dest/2, new_car/5]).
 
 -include("model.hrl").
 
@@ -96,6 +96,10 @@ calculate_dist_to_car_ahead(InitialIntersection, Car) ->
 -spec calculate_dist_to_first_blocking_semaphore(intersection(), car(), any()) -> non_neg_integer().
 calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights) ->
   calculate_dist_to_first_blocking_semaphore(Intersection, maps:get(position,Car), maps:get(path_to_dest,Car), Lights, 0).
+
+-spec new_car(car_id(), position(), non_neg_integer(), map(), [node_id()]) -> car().
+new_car(Id, Position, Velocity, Config, PathToDest) ->
+  #{id=>Id, position=>Position, velocity=>Velocity, config=>Config, path_to_dest=>PathToDest}.
 
 %% ====================================================================
 %% Internal functions

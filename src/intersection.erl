@@ -1,7 +1,7 @@
 %% @doc A module contains utility functions to operate on car intersection structure. All API functions should take intersection() type as a last argument.
 
 -module(intersection).
--export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3, get_node_id/1, add_incoming_nodes/3, normalize/1, normalize_incoming_nodes/1]).
+-export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3, get_node_id/1, add_incoming_nodes/3, get_incoming_nodes/2, calculate_lanes_capacity/1, get_lanes/1, new_position/2, get_next_lane_paths/2]).
 
 -include("model.hrl").
 
@@ -21,6 +21,14 @@ maps:get(type, maps:get(NodeId, Intersection)).
 get_node_length(NodeId, Intersection) ->
   maps:get(length, maps:get(NodeId, Intersection)).
 
+-spec get_incoming_nodes(node_id(), intersection()) -> [node_id()].
+get_incoming_nodes(NodeId, Intersection) ->
+  maps:get(incoming_nodes, maps:get(NodeId, Intersection)).
+
+-spec get_next_lane_paths(node_id(), intersection()) -> map().
+get_next_lane_paths(NodeId, Intersection) ->
+  maps:get(next_lane_paths, maps:get(NodeId, Intersection)).
+
 -spec get_cars_on(position(), intersection()) -> [car_id()].
 get_cars_on(Position, Intersection) ->
   #{node_id := NodeId, position_on_node := PositionOnNode} = Position,
@@ -35,10 +43,6 @@ add_incoming_nodes(SourceNodeId, [DestNodeId | Rest], Intersection) ->
   IncomingNodes = maps:get(incoming_nodes, Node, []),
   UpdatedNode = maps:put(incoming_nodes, lists:append(IncomingNodes, [SourceNodeId]), Node),
   add_incoming_nodes(SourceNodeId, Rest, maps:put(DestNodeId, UpdatedNode, Intersection)).
-
--spec normalize(intersection()) -> intersection().
-normalize(Intersection) ->
-  normalize_cars_on(normalize_incoming_nodes(Intersection)).
 
 %% @doc Returns list of all consecutive node ids including both semaphores and lanes
 %% to go from lane InitialLane through lanes from list PathToDest
@@ -97,45 +101,22 @@ add_car_on(CarId, Position, Intersection) ->
   Node = maps:get(NodeId, Intersection),
   maps:put(NodeId, add_car_on_node(CarId, PositionOnNode, Node), Intersection).
 
+-spec calculate_lanes_capacity(intersection()) -> pos_integer().
+calculate_lanes_capacity(Intersection) ->
+  calculate_lanes_capacity(maps:values(Intersection), 0).
+
+
+-spec get_lanes(intersection()) -> [intersection_node()].
+get_lanes(Intersection) ->
+  get_lanes(maps:values(Intersection), []).
+
+-spec new_position(node_id(), pos_integer()) -> position().
+new_position(NodeId, PositionOnNode) ->
+  #{node_id=>NodeId, position_on_node=>PositionOnNode}.
+
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-
--spec normalize_incoming_nodes(intersection()) -> intersection().
-normalize_incoming_nodes(Intersection) ->
-  normalize_incoming_nodes(maps:keys(Intersection), Intersection).
-
--spec normalize_incoming_nodes([node_id()], intersection()) -> intersection().
-normalize_incoming_nodes([], Intersection) ->
-  Intersection;
-
-normalize_incoming_nodes([NodeId | Rest], Intersection) ->
-  Node = maps:get(NodeId, Intersection),
-  case maps:is_key(incoming_nodes, Node) of
-    true ->
-      normalize_incoming_nodes(Rest, Intersection);
-    false ->
-      UpdatedNode = maps:put(incoming_nodes, [], Node),
-      normalize_incoming_nodes(Rest, maps:put(NodeId, UpdatedNode, Intersection))
-  end.
-
--spec normalize_cars_on(intersection()) -> intersection().
-normalize_cars_on(Intersection) ->
-  normalize_cars_on(maps:keys(Intersection), Intersection).
-
--spec normalize_cars_on([node_id()], intersection()) -> intersection().
-normalize_cars_on([], Intersection) ->
-  Intersection;
-
-normalize_cars_on([NodeId | Rest], Intersection) ->
-  Node = maps:get(NodeId, Intersection),
-  case maps:is_key(cars_on, Node) of
-    true ->
-      normalize_cars_on(Rest, Intersection);
-  false ->
-      UpdatedNode = maps:put(cars_on, #{}, Node),
-      normalize_cars_on(Rest, maps:put(NodeId, UpdatedNode, Intersection))
-  end.
 
 -spec get_path_with_semaphores(node_id(), [node_id()], [node_id()], intersection()) -> [node_id()].
 get_path_with_semaphores(_InitialLane, [], Result, _Intersection) ->
@@ -165,3 +146,26 @@ add_car_on_node(CarId, PositionOnNode, Node) ->
   UpdatedCarsOnNode = maps:put(PositionOnNode, lists:append(CarsOnPosition, [CarId]), CarsOnNodeMap),
   Node#{cars_on => UpdatedCarsOnNode}.
 
+-spec calculate_lanes_capacity([intersection_node()], non_neg_integer()) -> non_neg_integer().
+calculate_lanes_capacity([], Result) ->
+  Result;
+
+calculate_lanes_capacity([Node | Rest], Result) ->
+  case maps:get(type, Node) of
+    lane ->
+      calculate_lanes_capacity(Rest, Result + maps:get(length, Node));
+    semaphore ->
+      calculate_lanes_capacity(Rest, Result)
+  end.
+
+-spec get_lanes([intersection_node()], [intersection_node()]) -> [intersection_node()].
+get_lanes([], Lanes) ->
+  Lanes;
+
+get_lanes([Node | Rest], Lanes) ->
+  case maps:get(type, Node) of
+    lane ->
+      get_lanes(Rest, [Node | Lanes]);
+    _ ->
+      get_lanes(Rest, Lanes)
+  end.
