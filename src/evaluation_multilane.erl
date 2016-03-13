@@ -21,7 +21,13 @@ time_loop([], _, Result) ->
 
 time_loop([Lights | Solution], Data, Result) ->
   {UpdatedData, Moves} = move_cars(Lights, Data),
-  time_loop(Solution, UpdatedData, Result + Moves).
+  {_, UpdatedCars} = UpdatedData,
+  case collision:collision_occured(Data, UpdatedCars) of
+    true ->
+      -50000;
+    false ->
+      time_loop(Solution, UpdatedData, Result + Moves)
+  end.
 
 %% @doc Launches the loop that moves all cars in given time step
 -spec move_cars(gene(), input()) -> {input(), float()}.

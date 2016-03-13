@@ -10,12 +10,10 @@
 -type sim_params() :: emas:sim_params().
 -type solution() :: emas:solution([map()]).
 
-
-%% @doc Generates a random solution, a list of 4-bit tuples
 -spec solution(sim_params()) -> solution().
 solution(#sim_params{problem_size = ProblemSize}) ->
   random:seed(erlang:now()),
-    [generate_lights(random_triple())
+    [generate_lights(random_trit())
      || _ <- lists:seq(1, ProblemSize)].
 
 %% @doc Evaluates a given solution and returns a fitness value
@@ -42,7 +40,7 @@ mutation(Solution, #sim_params{mutation_rate = MutRate}) ->
 
 
 %% @doc Loads the data for which lights will be optimized
--spec config() -> term().
+-spec config() -> input().
 config() ->
     input:load("input.intersection", "input.cars").
 
@@ -50,12 +48,12 @@ config() ->
 %% Internal functions
 %% =============================================================================
 
--spec random_triple() -> trit().
-random_triple() ->
+-spec random_trit() -> trit().
+random_trit() ->
     random:uniform(3) - 1.
 
 generate_lights(LightValue) ->
-  Intersection = input:load_intersection_definition("basic.intersection"),
+  {Intersection, _} = config(),
   generate_lights(maps:keys(Intersection), maps:new(), LightValue).
 
 generate_lights([], Lights, _LightValue) ->
