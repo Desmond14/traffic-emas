@@ -1,7 +1,7 @@
 [
     #{id=>1, type=>lane, outcoming_nodes=>[5], next_lane_paths=>#{29=>[5,9,14,20,29], 31=>[5,31]}, length=>40},
     #{id=>2, type=>lane, outcoming_nodes=>[6], next_lane_paths=>#{30=>[6,10,15,21,30], 27=>[6,10,15,11,12,27]}, length=>40},
-    #{id=>3, type=>lane, outcoming_nodes=>[7], next_lane_paths=>#{25=>[7,11,16,22,25],32=>[7,11,16,10,9]}, length=>40},
+    #{id=>3, type=>lane, outcoming_nodes=>[7], next_lane_paths=>#{25=>[7,11,16,22,25],32=>[7,11,16,10,9,32]}, length=>40},
     #{id=>4, type=>lane, outcoming_nodes=>[8], next_lane_paths=>#{26=>[8,12,17,23,26],28=>[8,28]}, length=>40},
     #{id=>5, type=>semaphore, outcoming_nodes=>[9,31], length=>1},
     #{id=>6, type=>semaphore, outcoming_nodes=>[5,10], length=>1},
@@ -23,12 +23,12 @@
     #{id=>22, type=>semaphore, outcoming_nodes=>[6,25], length=>1},
     #{id=>23, type=>semaphore, outcoming_nodes=>[22,26], length=>1},
     #{id=>24, type=>lane, outcoming_nodes=>[23], next_lane_paths=>#{31=>[23,22,6,5,31],26=>[23,26]}, length=>40},
-    #{id=>25, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>26, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>27, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>28, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>29, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>30, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>31, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20},
-    #{id=>32, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>20}
+    #{id=>25, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>26, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>27, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>28, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>29, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>30, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>31, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40},
+    #{id=>32, type=>lane, outcoming_nodes=>[], next_lane_paths=>#{}, length=>40}
 ].

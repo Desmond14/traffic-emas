@@ -8,7 +8,14 @@
 -spec collision_occured(input(), [car()]) -> boolean().
 collision_occured({InitialIntersection, InitialCars}, UpdatedCars) ->
   VisitedPositions = mark_visited_positions(InitialCars, UpdatedCars, InitialIntersection),
-  collision_occured(VisitedPositions).
+  CollisionOccured = collision_occured(VisitedPositions),
+  case CollisionOccured of
+    true ->
+%%      ct:pal("~p~n", [VisitedPositions]),
+      true;
+    _ ->
+      false
+  end.
 
 %% =============================================================================
 %% Internal functions

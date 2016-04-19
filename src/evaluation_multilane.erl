@@ -8,6 +8,8 @@
 
 -spec evaluate_solution(solution(), input()) -> float().
 evaluate_solution(Solution, Data) ->
+  {_, Cars} = Data,
+  save_cars(Cars, integer_to_list(length(Solution))),
   time_loop(Solution, Data, 0).
 
 %% =============================================================================
@@ -22,12 +24,20 @@ time_loop([], _, Result) ->
 time_loop([Lights | Solution], Data, Result) ->
   {UpdatedData, Moves} = move_cars(Lights, Data),
   {_, UpdatedCars} = UpdatedData,
+  save_cars(UpdatedCars, integer_to_list(length(Solution))),
   case collision:collision_occured(Data, UpdatedCars) of
     true ->
-      -50000;
+      -1000 * (length(Solution) + 1);
     false ->
       time_loop(Solution, UpdatedData, Result + Moves)
   end.
+
+save_cars(Cars, Step) ->
+%%  ok.
+  {ok, File} = file:open(string:concat("/home/slakomy/ErlangProjects/step", Step), [write, binary]),
+  EncodedCars = jsx:encode(Cars),
+  file:write(File, EncodedCars),
+  file:close(File).
 
 %% @doc Launches the loop that moves all cars in given time step
 -spec move_cars(gene(), input()) -> {input(), float()}.

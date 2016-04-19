@@ -42,6 +42,7 @@ new_velocity(Car, DistToCarAhead) ->
       NewVelocity = min(MaxVelocity, min(DistToCarAhead - 1, Velocity + MaxAcceleration));
     DistToCarAhead =< Velocity ->
       NewVelocity = max(0, max(DistToCarAhead - 1, Velocity - MaxDeceleration))
+%%      NewVelocity = max(0, DistToCarAhead - 1)
   end,
   NewVelocity.
 
@@ -51,8 +52,14 @@ new_velocity(Car, DistToCarAhead) ->
 -spec decelerate_minimaly(intersection(), car(), lights()) -> {optional_car(), intersection()}.
 decelerate_minimaly(Intersection, Car, Lights) ->
   DistToBlocker = car:calculate_dist_to_blocker(Intersection, Lights, Car),
-  DecelerateBy = minimal_deceleration_to_stop_before(DistToBlocker, Car),
-  car:move_car(car:set_velocity(car:get_velocity(Car)-DecelerateBy, Car), Intersection).
+  DecelerateBy = max(1, minimal_deceleration_to_stop_before(DistToBlocker, Car)),
+%%  case car:get_id(Car) of
+%%    33 ->
+%%      ct:pal("Decelerating by ~p~n", [DecelerateBy]);
+%%    _ ->
+%%      do_nothing
+%%  end,
+  car:move_car(car:set_velocity(max(0, car:get_velocity(Car)-DecelerateBy), Car), Intersection).
 
 -spec minimal_deceleration_to_stop_before(non_neg_integer(), car()) -> non_neg_integer().
 minimal_deceleration_to_stop_before(DistToBlocker, Car) ->
@@ -74,8 +81,11 @@ minimal_deceleration_to_stop_before(DistToBlocker, Car, DecelerateBy) ->
 -spec is_in_safe_distance_to_blocking_semaphore(intersection(), car(), lights()) -> boolean().
 is_in_safe_distance_to_blocking_semaphore(Intersection, Car, Lights) ->
   InitialVelocity = car:get_velocity(Car),
-  DistToBlockingSemaphore = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
-  is_in_safe_distance_to_blocking_semaphore(InitialVelocity, DistToBlockingSemaphore).
+%%  DistToBlockingSemaphore = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
+%%  is_in_safe_distance_to_blocking_semaphore(InitialVelocity, DistToBlockingSemaphore).
+  DistToBlocker = car:calculate_dist_to_blocker(Intersection, Lights, Car),
+  MaximalNextVelocity = min(car:get_max_velocity(Car), InitialVelocity + car:get_max_acceleration(Car)),
+  is_in_safe_distance_to_blocking_semaphore(MaximalNextVelocity, DistToBlocker-MaximalNextVelocity).
 
 -spec is_in_safe_distance_to_blocking_semaphore(non_neg_integer(), non_neg_integer()) -> boolean().
 is_in_safe_distance_to_blocking_semaphore(0, Distance) ->
@@ -98,3 +108,6 @@ can_stop_before_blocker(DistanceTo, 0, _MaxVelocity, _MaxDeceleration) ->
 can_stop_before_blocker(DistanceTo, Velocity, MaxVelocity, MaxDeceleration) ->
   NewVelocity = max(0, Velocity-MaxDeceleration),
   can_stop_before_blocker(DistanceTo-NewVelocity, NewVelocity, MaxVelocity, MaxDeceleration).
+
+
+
