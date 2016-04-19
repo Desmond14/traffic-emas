@@ -1,7 +1,7 @@
 %% @doc A module contains utility functions to operate on car intersection structure. All API functions should take intersection() type as a last argument.
 
 -module(intersection).
--export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3, get_node_id/1, add_incoming_nodes/3, get_incoming_nodes/2, calculate_lanes_capacity/1, get_lanes/1, new_position/2, get_next_lane_paths/2]).
+-export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3, get_node_id/1, add_incoming_nodes/3, get_incoming_nodes/2, calculate_lanes_capacity/1, get_lanes/1, new_position/2, get_next_lane_paths/2, get_semaphores/1, extract_ids/1]).
 
 -include("model.hrl").
 
@@ -110,9 +110,24 @@ calculate_lanes_capacity(Intersection) ->
 get_lanes(Intersection) ->
   get_lanes(maps:values(Intersection), []).
 
+-spec get_semaphores(intersection()) -> [intersection_node()].
+get_semaphores(Intersection) ->
+  get_nodes_by_type(maps:values(Intersection), semaphore, []).
+
 -spec new_position(node_id(), pos_integer()) -> position().
 new_position(NodeId, PositionOnNode) ->
   #{node_id=>NodeId, position_on_node=>PositionOnNode}.
+
+-spec extract_ids([node()]) -> [id()].
+extract_ids(Nodes) ->
+  extract_ids(Nodes, []).
+
+-spec extract_ids([node()], [id()]) -> [id()].
+extract_ids([], Result) ->
+  Result;
+
+extract_ids([Node | Rest], Result) ->
+  extract_ids(Rest, [maps:get(id, Node) | Result]).
 
 %% ====================================================================
 %% Internal functions
@@ -168,4 +183,16 @@ get_lanes([Node | Rest], Lanes) ->
       get_lanes(Rest, [Node | Lanes]);
     _ ->
       get_lanes(Rest, Lanes)
+  end.
+
+-spec get_nodes_by_type([intersection_node()], node_type(), [intersection_node()]) -> [intersection_node()].
+get_nodes_by_type([], _NodeType, Nodes) ->
+  Nodes;
+
+get_nodes_by_type([Node | Rest], NodeType, SoFarCollected) ->
+  case maps:get(type, Node) of
+    NodeType ->
+      get_nodes_by_type(Rest, NodeType, [Node | SoFarCollected]);
+    _ ->
+      get_nodes_by_type(Rest, NodeType, SoFarCollected)
   end.
