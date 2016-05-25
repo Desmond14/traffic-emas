@@ -11,10 +11,10 @@ evaluate_solution(Solution, Data, true) ->
   {_, Cars} = Data,
   save_solution(Solution),
   save_cars(Cars, integer_to_list(length(Solution))),
-  time_loop(Solution, Data, 0, true);
+  time_loop(Solution, Data, ?INITIAL_FITNESS, true);
 
 evaluate_solution(Solution, Data, false) ->
-  time_loop(Solution, Data, 0, false).
+  time_loop(Solution, Data, ?INITIAL_FITNESS, false).
 
 %% =============================================================================
 %% Internal functions
@@ -26,8 +26,10 @@ time_loop([], _, Result, _SaveSimulationCourse) ->
   Result;
 
 time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
-  {UpdatedData, Moves} = move_cars(Lights, Data),
-  {_, UpdatedCars} = UpdatedData,
+  {UpdatedData, _Moves} = move_cars(Lights, Data),
+  {_UpdatedIntersection, UpdatedCars} = UpdatedData,
+  ct:pal("~p~n", [UpdatedCars]),
+  Penalty = count_cars_not_on_dest_lane(UpdatedCars),
   case SaveSimulationCourse of
     true ->
       save_cars(UpdatedCars, integer_to_list(length(Solution)));
@@ -38,7 +40,7 @@ time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
     true ->
       -1000 * (length(Solution) + 1);
     false ->
-      time_loop(Solution, UpdatedData, Result + Moves, SaveSimulationCourse)
+      time_loop(Solution, UpdatedData, Result - Penalty, SaveSimulationCourse)
   end.
 
 save_cars(Cars, Step) ->
@@ -81,3 +83,16 @@ update_intersection(CarBeforeUpdate, UpdatedCar, IntersectionToUpdate) ->
       intersection:add_car_on(car:get_id(UpdatedCar), car:get_position(UpdatedCar), UpdatedIntersection)
   end.
 
+count_cars_not_on_dest_lane(Cars) ->
+  count_cars_not_on_dest_lane(Cars, 0).
+
+count_cars_not_on_dest_lane([], Result) ->
+  Result;
+
+count_cars_not_on_dest_lane([Car | Rest], Result) ->
+  case length(car:get_path_to_dest(Car)) of
+    0 ->
+      count_cars_not_on_dest_lane(Rest, Result);
+    _ ->
+      count_cars_not_on_dest_lane(Rest, Result+1)
+  end.

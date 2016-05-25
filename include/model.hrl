@@ -4,6 +4,7 @@
 -define(BOTH_RED, 1).
 -define(GREEN_FOR_HIGHER_ID, 2).
 -define(MAX_INT, 134217727).
+-define(INITIAL_FITNESS, 2000).
 
 -type trit() :: ?GREEN_FOR_LOWER_ID | ?BOTH_RED | ?GREEN_FOR_HIGHER_ID.
 -type id() :: integer().
