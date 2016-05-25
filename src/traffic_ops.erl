@@ -15,14 +15,15 @@
 
 -spec solution(sim_params()) -> solution().
 solution(#sim_params{problem_size = ProblemSize}) ->
-  {Intersection, _} = config(),
+  {{Intersection, _}, _} = config(),
   random:seed(erlang:now()),
   generate_solution(Intersection, ProblemSize).
 
 %% @doc Evaluates a given solution and returns a fitness value
 -spec evaluation(solution(), sim_params()) -> float().
-evaluation(Solution, #sim_params{extra = Data}) ->
-    Fitness = evaluation_multilane:evaluate_solution(Solution, Data),
+evaluation(Solution, #sim_params{extra = Input}) ->
+    {Data, SaveSimulationCourse} = Input,
+    Fitness = evaluation_multilane:evaluate_solution(Solution, Data, SaveSimulationCourse),
     float(Fitness).
 
 %% @doc Crossover recombination in a random point
@@ -45,7 +46,7 @@ mutation(Solution, #sim_params{mutation_rate = MutRate}) ->
 %% @doc Loads the data for which lights will be optimized
 -spec config() -> input().
 config() ->
-    input:load("input.intersection", "input.cars").
+  {input:load("input.intersection", "input.cars"), false}.
 
 %% =============================================================================
 %% Internal functions

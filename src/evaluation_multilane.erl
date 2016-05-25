@@ -1,43 +1,54 @@
 -module(evaluation_multilane).
--export([evaluate_solution/2]).
+-export([evaluate_solution/3]).
 
 -include("model.hrl").
 
 -type gene() :: #{node_id()=>trit()}.
 -type solution() :: [gene()].
 
--spec evaluate_solution(solution(), input()) -> float().
-evaluate_solution(Solution, Data) ->
+-spec evaluate_solution(solution(), input(), boolean()) -> float().
+evaluate_solution(Solution, Data, true) ->
   {_, Cars} = Data,
+  save_solution(Solution),
   save_cars(Cars, integer_to_list(length(Solution))),
-  time_loop(Solution, Data, 0).
+  time_loop(Solution, Data, 0, true);
+
+evaluate_solution(Solution, Data, false) ->
+  time_loop(Solution, Data, 0, false).
 
 %% =============================================================================
 %% Internal functions
 %% =============================================================================
 
 %% @doc Main loop which iterates through the solution genes
--spec time_loop(solution(), input(), float()) -> float().
-time_loop([], _, Result) ->
+-spec time_loop(solution(), input(), float(), boolean()) -> float().
+time_loop([], _, Result, _SaveSimulationCourse) ->
   Result;
 
-time_loop([Lights | Solution], Data, Result) ->
+time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
   {UpdatedData, Moves} = move_cars(Lights, Data),
   {_, UpdatedCars} = UpdatedData,
-  save_cars(UpdatedCars, integer_to_list(length(Solution))),
+  case SaveSimulationCourse of
+    true ->
+      save_cars(UpdatedCars, integer_to_list(length(Solution)));
+    _ ->
+      ok
+  end,
   case collision:collision_occured(Data, UpdatedCars) of
     true ->
       -1000 * (length(Solution) + 1);
     false ->
-      time_loop(Solution, UpdatedData, Result + Moves)
+      time_loop(Solution, UpdatedData, Result + Moves, SaveSimulationCourse)
   end.
 
 save_cars(Cars, Step) ->
-%%  ok.
-  {ok, File} = file:open(string:concat("/home/slakomy/ErlangProjects/step", Step), [write, binary]),
-  EncodedCars = jsx:encode(Cars),
-  file:write(File, EncodedCars),
-  file:close(File).
+  file:write_file(string:concat("result/step", Step), io_lib:fwrite("~p.\n", [Cars])).
+%%  {ok, File} = file:open(string:concat("result/step", Step), [write, binary]),
+%%  file:write(File, Cars),
+%%  file:close(File).
+
+save_solution(Solution) ->
+  file:write_file("result/solution", io_lib:fwrite("~p.\n", [Solution])).
 
 %% @doc Launches the loop that moves all cars in given time step
 -spec move_cars(gene(), input()) -> {input(), float()}.

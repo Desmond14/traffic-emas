@@ -1,15 +1,13 @@
 #!/usr/bin/env escript
 
--define(PROGRAM, "emas").
+-define(PROGRAM, "converter").
 
 
 main(Args) ->
     add_deps(),
     Options = get_options(Args),
-    Time = get_time(Options),
-    {Solution, Fitness, Energy} = emas:start(Time, Options),
-    file:write_file("result.txt", integer_to_list(round(Fitness)), [append]),
-    {Solution, Fitness, Energy}.
+    ProblemSize = get_problem_size(Options),
+    util:convert_to_jsons(ProblemSize).
 
 
 add_deps() ->
@@ -34,30 +32,19 @@ get_options(Args) ->
         end,
     Options.
 
-
-add_time(Spec) ->
-    [time_spec()|
-     Spec].
-
-time_spec() ->
-    {time, $t, "time", integer,
-     "amount of time to run given simulaiton, in milliseconds"}.
-
-get_time(Options) ->
-    case proplists:get_value(time, Options) of
+get_problem_size(Options) ->
+    case proplists:get_value(problem_size, Options) of
         undefined ->
             usage(),
             erlang:exit("Missing time argument");
-        Time ->
-            Time
+        ProblemSize ->
+            ProblemSize
     end.
 
 
 options_spec() ->
-    Specs = emas_config:options_specs(),
-    add_time(Specs).
+    Specs = emas_config:options_specs().
 
 usage() ->
     getopt:usage(options_spec(), ?PROGRAM).
-            
-    
+

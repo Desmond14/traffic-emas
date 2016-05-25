@@ -1,5 +1,5 @@
 -module(util).
--export([evaluate_file/1, generate_cars_on/2]).
+-export([evaluate_file/1, generate_cars_on/2, convert_to_jsons/1]).
 
 -include("model.hrl").
 
@@ -18,6 +18,11 @@ evaluate_file(Filename) ->
 generate_cars_on(Intersection, LanesCoverage) ->
   CarsToGenerate = round(LanesCoverage * intersection:calculate_lanes_capacity(Intersection)),
   generate_cars_on(Intersection, [], CarsToGenerate, 1).
+
+-spec convert_to_jsons(integer()) -> any().
+convert_to_jsons(ProblemSize) ->
+  convert_steps(0, ProblemSize),
+  convert_solution().
 
 %% ====================================================================
 %% Internal functions
@@ -52,3 +57,19 @@ draw_unoccupied_position(Intersection) ->
     _ ->
       draw_unoccupied_position(Intersection)
   end.
+
+convert_steps(StepNo, MaxStepNo) when StepNo =< MaxStepNo ->
+  InputFilename = "result/step" ++ integer_to_list(StepNo),
+  ct:pal("~p~n", [InputFilename]),
+  OutputFilename = InputFilename ++ ".json",
+  ct:pal("~p~n", [OutputFilename]),
+  file:write_file(OutputFilename, jsx:encode([util:evaluate_file(InputFilename)])),
+  convert_steps(StepNo+1, MaxStepNo);
+
+convert_steps(_StepNo, _MaxStepNo) ->
+  ok.
+
+convert_solution() ->
+  InputFilename = "result/solution",
+  OutputFilename =  "result/solution.json",
+  file:write_file(OutputFilename, jsx:encode([util:evaluate_file(InputFilename)])).
