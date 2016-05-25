@@ -3,6 +3,8 @@
 
 -include("model.hrl").
 
+-define(FIRST_CAR_ID, 1).
+
 -spec evaluate_file(string()) -> any().
 evaluate_file(Filename) ->
   ProjectPath = filename:dirname(filename:dirname(code:which(?MODULE))),
@@ -14,10 +16,13 @@ evaluate_file(Filename) ->
   {value,Value,_}=erl_eval:exprs(ErlAbsForm, erl_eval:new_bindings()),
   Value.
 
--spec generate_cars_on(intersection(), float()) -> [car()].
-generate_cars_on(Intersection, LanesCoverage) ->
-  CarsToGenerate = round(LanesCoverage * intersection:calculate_lanes_capacity(Intersection)),
-  generate_cars_on(Intersection, [], CarsToGenerate, 1).
+-spec generate_cars_on(intersection(), tuple()) -> [car()].
+generate_cars_on(Intersection, {coverage, LanesCoverage}) ->
+  CarsToGenerate = round(LanesCoverage * intersection:calculate_lanes_capacity(intersection:get_incoming_lanes(Intersection))),
+  generate_cars_on(Intersection, [], CarsToGenerate, ?FIRST_CAR_ID);
+
+generate_cars_on(Intersection, {cars_number, CarsNumber}) ->
+  generate_cars_on(Intersection, [], CarsNumber, ?FIRST_CAR_ID).
 
 -spec convert_to_jsons(integer()) -> any().
 convert_to_jsons(ProblemSize) ->
@@ -46,7 +51,7 @@ generate_cars_on(Intersection, GeneratedCars, CarsLeftToGenerate, CarId) ->
   generate_cars_on(UpdatedIntersection, [Car | GeneratedCars], CarsLeftToGenerate-1, CarId + 1).
 
 draw_unoccupied_position(Intersection) ->
-  Lanes = intersection:get_lanes(Intersection),
+  Lanes = intersection:get_incoming_lanes(Intersection),
   RandomLane = lists:nth(random:uniform(length(Lanes)), Lanes),
   LaneId = intersection:get_node_id(RandomLane),
   PositionOnLane = random:uniform(intersection:get_node_length(LaneId, Intersection)) + 1,

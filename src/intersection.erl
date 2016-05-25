@@ -1,7 +1,7 @@
 %% @doc A module contains utility functions to operate on car intersection structure. All API functions should take intersection() type as a last argument.
 
 -module(intersection).
--export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3, get_node_id/1, add_incoming_nodes/3, get_incoming_nodes/2, calculate_lanes_capacity/1, get_lanes/1, new_position/2, get_next_lane_paths/2, get_semaphores/1, extract_ids/1]).
+-export([get_next_lane_path/3, get_path_with_semaphores/3, get_node_type/2, next_position/4, add_car_on/3, get_cars_on/2, get_node_length/2, move_car/4, remove_car_from/3, get_node_id/1, add_incoming_nodes/3, get_incoming_nodes/2, calculate_lanes_capacity/1, get_lanes/1, new_position/2, get_next_lane_paths/2, get_semaphores/1, extract_ids/1, get_incoming_lanes/1]).
 
 -include("model.hrl").
 
@@ -101,14 +101,17 @@ add_car_on(CarId, Position, Intersection) ->
   Node = maps:get(NodeId, Intersection),
   maps:put(NodeId, add_car_on_node(CarId, PositionOnNode, Node), Intersection).
 
--spec calculate_lanes_capacity(intersection()) -> pos_integer().
-calculate_lanes_capacity(Intersection) ->
-  calculate_lanes_capacity(maps:values(Intersection), 0).
-
+-spec calculate_lanes_capacity([intersection_node()]) -> pos_integer().
+calculate_lanes_capacity(Lanes) ->
+  calculate_lanes_capacity(Lanes, 0).
 
 -spec get_lanes(intersection()) -> [intersection_node()].
 get_lanes(Intersection) ->
   get_lanes(maps:values(Intersection), []).
+
+-spec get_incoming_lanes(intersection()) -> [intersection_node()].
+get_incoming_lanes(Intersection) ->
+  get_incoming_lanes(get_lanes(Intersection), []).
 
 -spec get_semaphores(intersection()) -> [intersection_node()].
 get_semaphores(Intersection) ->
@@ -183,6 +186,18 @@ get_lanes([Node | Rest], Lanes) ->
       get_lanes(Rest, [Node | Lanes]);
     _ ->
       get_lanes(Rest, Lanes)
+  end.
+
+-spec get_incoming_lanes([intersection_node()], [intersection_node]) -> [intersection_node()].
+get_incoming_lanes([], IncomingLanes) ->
+  IncomingLanes;
+
+get_incoming_lanes([Node | Rest], IncomingLanes) ->
+  case length(get_outcoming_nodes(Node)) of
+    0 ->
+      get_incoming_lanes(Rest, IncomingLanes);
+    _ ->
+      get_incoming_lanes(Rest, [Node | IncomingLanes])
   end.
 
 -spec get_nodes_by_type([intersection_node()], node_type(), [intersection_node()]) -> [intersection_node()].
