@@ -28,7 +28,6 @@ time_loop([], _, Result, _SaveSimulationCourse) ->
 time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
   {UpdatedData, _Moves} = move_cars(Lights, Data),
   {_UpdatedIntersection, UpdatedCars} = UpdatedData,
-  ct:pal("~p~n", [UpdatedCars]),
   Penalty = count_cars_not_on_dest_lane(UpdatedCars),
   case SaveSimulationCourse of
     true ->
@@ -45,17 +44,13 @@ time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
 
 save_cars(Cars, Step) ->
   file:write_file(string:concat("result/step", Step), io_lib:fwrite("~p.\n", [Cars])).
-%%  {ok, File} = file:open(string:concat("result/step", Step), [write, binary]),
-%%  file:write(File, Cars),
-%%  file:close(File).
 
 save_solution(Solution) ->
   file:write_file("result/solution", io_lib:fwrite("~p.\n", [Solution])).
 
 %% @doc Launches the loop that moves all cars in given time step
 -spec move_cars(gene(), input()) -> {input(), float()}.
-move_cars(Lights, InitialData) ->
-  {Intersection, Cars} = InitialData,
+move_cars(Lights, {Intersection, Cars}) ->
   move_one_car(Intersection, Intersection, Cars, [], Lights, 0).
 
 -spec move_one_car(intersection(), intersection(), [car()], [car()], gene(), integer()) -> {input(), integer()}.

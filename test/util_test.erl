@@ -42,13 +42,5 @@ generate_for_real_test() ->
 
 generate_cars_test() ->
   {Intersection, _Cars} = input:load("input.intersection", "input.cars"),
-  {_UpdatedIntersection, Cars} = util:generate_cars_on(Intersection, {cars_number, 20}),
+  {_UpdatedIntersection, Cars} = util:generate_cars_on(Intersection, {cars_number, 14}),
   ct:pal("~p~n", [Cars]).
-
-%%convert_to_json_test() ->
-%%  ?assertEqual(ok, util:convert_to_jsons(20)).
-
-%%load_full_cars_definition_test() ->
-%%  {Intersection, Cars} = input:load("input.intersection", "small_input.cars"),
-%%  io:format(jsx:encode(Cars)),
-%%  ?assertEqual(true, false).
