@@ -11,7 +11,7 @@
 -type solution() :: emas:solution([map()]).
 
 -define(SAME_LIGHT_AT_LEAST_FOR, 2).
--define(SAME_LIGHT_AT_MOST_FOR, 10).
+-define(SAME_LIGHT_AT_MOST_FOR, 20).
 
 -spec solution(sim_params()) -> solution().
 solution(#sim_params{problem_size = ProblemSize}) ->
@@ -36,9 +36,9 @@ recombination(S1, S2, #sim_params{problem_size = ProblemSize}) ->
 
 %% @doc Mutates genes at random indexes
 -spec mutation(solution(), sim_params()) -> solution().
-mutation(Solution, #sim_params{mutation_rate = MutRate}) ->
+mutation(Solution, #sim_params{mutation_rate = MutRate, mutation_range = MutRan}) ->
     [case random:uniform() < MutRate of
-         true -> mutate_gene(Gene, MutRate);
+         true -> mutate_gene(Gene, MutRan);
          false -> Gene
      end || Gene <- Solution].
 
@@ -57,8 +57,8 @@ random_trit() ->
     random:uniform(3) - 1.
 
 -spec mutate_gene(lights(), float()) -> lights().
-mutate_gene(Lights, MutRate) ->
-  NodesToMutate = [NodeId || NodeId <- maps:keys(Lights), random:uniform() < MutRate],
+mutate_gene(Lights, MutationRange) ->
+  NodesToMutate = [NodeId || NodeId <- maps:keys(Lights), random:uniform() < MutationRange],
   change_light(NodesToMutate, Lights).
 
 

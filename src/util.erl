@@ -65,9 +65,9 @@ draw_unoccupied_position(Intersection) ->
 
 convert_steps(StepNo, MaxStepNo) when StepNo =< MaxStepNo ->
   InputFilename = "result/step" ++ integer_to_list(StepNo),
-  ct:pal("~p~n", [InputFilename]),
+%%  ct:pal("~p~n", [InputFilename]),
   OutputFilename = InputFilename ++ ".json",
-  ct:pal("~p~n", [OutputFilename]),
+%%  ct:pal("~p~n", [OutputFilename]),
   file:write_file(OutputFilename, jsx:encode([util:evaluate_file(InputFilename)])),
   convert_steps(StepNo+1, MaxStepNo);
 
