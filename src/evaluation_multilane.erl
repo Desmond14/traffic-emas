@@ -7,11 +7,10 @@
 -type solution() :: [gene()].
 
 -spec evaluate_solution(solution(), input(), boolean()) -> float().
-evaluate_solution(Solution, Data, true) ->
-  {_, Cars} = Data,
+evaluate_solution(Solution, {Intersection, Cars}, true) ->
   save_solution(Solution),
   save_cars(Cars, integer_to_list(length(Solution))),
-  time_loop(Solution, Data, ?INITIAL_FITNESS, true);
+  time_loop(Solution, {Intersection, Cars}, ?INITIAL_FITNESS, true);
 
 evaluate_solution(Solution, Data, false) ->
   time_loop(Solution, Data, ?INITIAL_FITNESS, false).
@@ -26,20 +25,19 @@ time_loop([], _, Result, _SaveSimulationCourse) ->
   Result;
 
 time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
-  {UpdatedData, _Moves} = move_cars(Lights, Data),
-  {_UpdatedIntersection, UpdatedCars} = UpdatedData,
+  {UpdatedIntersection, UpdatedCars} = move_cars(Lights, Data),
   Penalty = count_cars_not_on_dest_lane(UpdatedCars),
   case SaveSimulationCourse of
     true ->
       save_cars(UpdatedCars, integer_to_list(length(Solution)));
-    _ ->
+    false ->
       ok
   end,
   case collision:collision_occured(Data, UpdatedCars) of
     true ->
       -1000 * (length(Solution) + 1);
     false ->
-      time_loop(Solution, UpdatedData, Result - Penalty, SaveSimulationCourse)
+      time_loop(Solution, {UpdatedIntersection, UpdatedCars}, Result - Penalty, SaveSimulationCourse)
   end.
 
 save_cars(Cars, Step) ->
@@ -49,23 +47,22 @@ save_solution(Solution) ->
   file:write_file("result/solution", io_lib:fwrite("~p.\n", [Solution])).
 
 %% @doc Launches the loop that moves all cars in given time step
--spec move_cars(gene(), input()) -> {input(), float()}.
+-spec move_cars(gene(), input()) -> input().
 move_cars(Lights, {Intersection, Cars}) ->
-  move_one_car(Intersection, Intersection, Cars, [], Lights, 0).
+  move_one_car(Intersection, Intersection, Cars, [], Lights).
 
--spec move_one_car(intersection(), intersection(), [car()], [car()], gene(), integer()) -> {input(), integer()}.
-move_one_car(_InitialIntersection, UpdatedIntersection, [], UpdatedCars, _Lights, Distance) ->
-  {{UpdatedIntersection, UpdatedCars}, Distance};
+-spec move_one_car(intersection(), intersection(), [car()], [car()], gene()) -> input().
+move_one_car(_InitialIntersection, UpdatedIntersection, [], UpdatedCars, _Lights) ->
+  {UpdatedIntersection, UpdatedCars};
 
-move_one_car(InitialIntersection, IntersectionToUpdate, CarsToProcess, UpdatedCars, Lights, Distance) ->
-  [Car | _] = CarsToProcess,
+move_one_car(InitialIntersection, IntersectionToUpdate, [Car | CarsLeftToProcess], UpdatedCars, Lights) ->
   {UpdatedCar, _UpdatedIntersection} = algorithm:move(Car, InitialIntersection, Lights),
   UpdatedIntersection = update_intersection(Car, UpdatedCar, IntersectionToUpdate),
   case UpdatedCar of
     outside_intersection ->
-      move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), UpdatedCars, Lights, Distance + car:get_velocity(Car));
+      move_one_car(InitialIntersection, UpdatedIntersection, CarsLeftToProcess, UpdatedCars, Lights);
     _ ->
-      move_one_car(InitialIntersection, UpdatedIntersection, tl(CarsToProcess), lists:append(UpdatedCars, [UpdatedCar]), Lights, Distance + car:get_velocity(UpdatedCar))
+      move_one_car(InitialIntersection, UpdatedIntersection, CarsLeftToProcess, lists:append(UpdatedCars, [UpdatedCar]), Lights)
   end.
 
 -spec update_intersection(optional_car(), car(), intersection()) -> intersection().
@@ -79,15 +76,4 @@ update_intersection(CarBeforeUpdate, UpdatedCar, IntersectionToUpdate) ->
   end.
 
 count_cars_not_on_dest_lane(Cars) ->
-  count_cars_not_on_dest_lane(Cars, 0).
-
-count_cars_not_on_dest_lane([], Result) ->
-  Result;
-
-count_cars_not_on_dest_lane([Car | Rest], Result) ->
-  case length(car:get_path_to_dest(Car)) of
-    0 ->
-      count_cars_not_on_dest_lane(Rest, Result);
-    _ ->
-      count_cars_not_on_dest_lane(Rest, Result+1)
-  end.
+  length([Car || Car <- Cars, length(car:get_path_to_dest(Car)) > 0]).
