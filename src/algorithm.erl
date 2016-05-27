@@ -9,7 +9,7 @@
 %% Returns tuple with updated car and updated intersection.
 -spec move(car(), intersection(), lights()) -> {optional_car(), intersection()}.
 move(Car, Intersection, Lights) ->
-  case is_in_safe_distance_to_blocking_semaphore(Intersection, Car, Lights) of
+  case is_in_safe_distance_to_blocker(Intersection, Car, Lights) of
     true ->
       follow_nagel_schreckenberg(Car, Intersection, Lights);
     false ->
@@ -78,8 +78,8 @@ minimal_deceleration_to_stop_before(DistToBlocker, Car, DecelerateBy) ->
       DecelerateBy+1
   end.
 
--spec is_in_safe_distance_to_blocking_semaphore(intersection(), car(), lights()) -> boolean().
-is_in_safe_distance_to_blocking_semaphore(Intersection, Car, Lights) ->
+-spec is_in_safe_distance_to_blocker(intersection(), car(), lights()) -> boolean().
+is_in_safe_distance_to_blocker(Intersection, Car, Lights) ->
   InitialVelocity = car:get_velocity(Car),
 %%  DistToBlockingSemaphore = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
 %%  is_in_safe_distance_to_blocking_semaphore(InitialVelocity, DistToBlockingSemaphore).
