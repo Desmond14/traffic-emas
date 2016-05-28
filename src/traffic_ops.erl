@@ -72,14 +72,13 @@ change_light([NodeId | Rest], Lights) ->
     1 ->
       case random:uniform() < 0.5 of
         true ->
-          UpdatedLights = maps:update(NodeId, 0, Lights);
+          change_light(Rest, maps:update(NodeId, 0, Lights));
         false ->
-          UpdatedLights = maps:update(NodeId, 2, Lights)
+          change_light(Rest, maps:update(NodeId, 2, Lights))
       end;
     _ ->
-      UpdatedLights = maps:update(NodeId, 1, Lights)
-  end,
-  change_light(Rest, UpdatedLights).
+      change_light(Rest, maps:update(NodeId, 1, Lights))
+  end.
 
 -spec generate_solution(intersection(), pos_integer()) -> solution().
 generate_solution(Intersection, ProblemSize) ->
