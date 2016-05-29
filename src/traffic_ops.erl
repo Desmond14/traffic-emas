@@ -12,6 +12,7 @@
 
 -define(SAME_LIGHT_AT_LEAST_FOR, 2).
 -define(SAME_LIGHT_AT_MOST_FOR, 20).
+-define(MAX_MUTATION_RANGE, 5).
 
 -spec solution(sim_params()) -> solution().
 solution(#sim_params{problem_size = ProblemSize}) ->
@@ -36,12 +37,29 @@ recombination(S1, S2, #sim_params{problem_size = ProblemSize}) ->
 
 %% @doc Mutates genes at random indexes
 -spec mutation(solution(), sim_params()) -> solution().
-mutation(Solution, #sim_params{mutation_rate = MutRate, mutation_range = MutRan}) ->
-    [case random:uniform() < MutRate of
-         true -> mutate_gene(Gene, MutRan);
-         false -> Gene
-     end || Gene <- Solution].
+mutation(Solution, #sim_params{mutation_rate = MutRate, mutation_range = MutRan, problem_size = ProblemSize}) ->
+  SemaphoreIds = maps:keys(lists:nth(1, Solution)),
+  Mutations = [random_mutation(Id, ProblemSize) || Id <-SemaphoreIds, random:uniform() < MutRate],
+  mutate(Solution, Mutations).
 
+random_mutation(IdToMutate, ProblemSize) ->
+  StartTimeStep = random:uniform(ProblemSize),
+  EndTimeStep = min(ProblemSize, StartTimeStep + random:uniform(?MAX_MUTATION_RANGE) - 1),
+  {IdToMutate, StartTimeStep, EndTimeStep, random_trit()}.
+
+mutate(Solution, Mutations) ->
+  [mutate_with(lists:nth(Idx, Solution), Idx, Mutations) || Idx <- lists:seq(1, length(Solution))].
+
+mutate_with(Gene, _Idx, []) ->
+  Gene;
+
+mutate_with(Gene, Idx, [{IdToMutate, StartTimeStep, EndTimeStep, Trit} | Tail]) ->
+  case Idx >= StartTimeStep andalso Idx =< EndTimeStep of
+    true ->
+      mutate_with(maps:put(IdToMutate, Trit, Gene), Idx, Tail);
+    false ->
+      mutate_with(Gene, Idx, Tail)
+  end.
 
 %% @doc Loads the data for which lights will be optimized
 -spec config() -> input().
