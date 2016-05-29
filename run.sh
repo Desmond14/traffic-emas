@@ -1,9 +1,9 @@
-InitialTime=5000
-MaxTime=40000
-TimeStep=5000
+InitialTime=10000
+MaxTime=30000
+TimeStep=10000
 ProblemSize=20
-Iterations=10
-MutationRate=0.25
+Iterations=5
+MutationRate=0.20
 MutationRange=0.20
 Model=mas_skel
 
