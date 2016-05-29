@@ -42,5 +42,5 @@ generate_for_real_test() ->
 
 generate_cars_test() ->
   {Intersection, _Cars} = input:load("input.intersection", "input.cars"),
-  {_UpdatedIntersection, Cars} = util:generate_cars_on(Intersection, {cars_number, 14}),
+  {_UpdatedIntersection, Cars} = util:generate_cars_on(Intersection, {cars_number, 63}),
   ct:pal("~p~n", [Cars]).

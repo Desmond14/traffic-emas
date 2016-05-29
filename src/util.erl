@@ -19,10 +19,10 @@ evaluate_file(Filename) ->
 -spec generate_cars_on(intersection(), tuple()) -> [car()].
 generate_cars_on(Intersection, {coverage, LanesCoverage}) ->
   CarsToGenerate = round(LanesCoverage * intersection:calculate_lanes_capacity(intersection:get_incoming_lanes(Intersection))),
-  generate_cars_on(Intersection, [], CarsToGenerate, ?FIRST_CAR_ID);
+  generate_cars_on(Intersection, CarsToGenerate, ?FIRST_CAR_ID);
 
 generate_cars_on(Intersection, {cars_number, CarsNumber}) ->
-  generate_cars_on(Intersection, [], CarsNumber, ?FIRST_CAR_ID).
+  generate_cars_on(Intersection, CarsNumber, ?FIRST_CAR_ID).
 
 -spec convert_to_jsons(integer()) -> any().
 convert_to_jsons(ProblemSize) ->
@@ -33,11 +33,27 @@ convert_to_jsons(ProblemSize) ->
 %% Internal functions
 %% ====================================================================
 
-generate_cars_on(Intersection, Cars, 0, _CarId) ->
+
+get_all_positions(Intersection) ->
+  Lanes = intersection:get_incoming_lanes(Intersection),
+  get_all_positions(Lanes, []).
+
+get_all_positions([], Result) ->
+  Result;
+
+get_all_positions([H|T], Result) ->
+  NodeId = intersection:get_node_id(H),
+  get_all_positions(T, Result ++ [intersection:new_position(NodeId, Position) || Position <- lists:seq(1, maps:get(length, H))]).
+
+generate_cars_on(Intersection, CarsToGenerate, CarId) ->
+  PossiblePositions = get_all_positions(Intersection),
+  generate_cars_on(Intersection, PossiblePositions, [], CarsToGenerate, CarId).
+
+generate_cars_on(Intersection, _PossiblePositions, Cars, 0, _CarId) ->
   {Intersection, Cars};
 
-generate_cars_on(Intersection, GeneratedCars, CarsLeftToGenerate, CarId) ->
-  Position = draw_unoccupied_position(Intersection),
+generate_cars_on(Intersection, PossiblePositions, GeneratedCars, CarsLeftToGenerate, CarId) ->
+  Position = draw_unoccupied_position(PossiblePositions),
   NextLaneIds = maps:keys(intersection:get_next_lane_paths(maps:get(node_id, Position), Intersection)),
   CarConfig = #{max_velocity=>4, max_acceleration=>1, max_deceleration=>2},
   case NextLaneIds of
@@ -48,20 +64,10 @@ generate_cars_on(Intersection, GeneratedCars, CarsLeftToGenerate, CarId) ->
       Car = car:new_car(CarId, Position, 1, CarConfig, [RandomDest])
   end,
   UpdatedIntersection = intersection:add_car_on(CarId, Position, Intersection),
-  generate_cars_on(UpdatedIntersection, [Car | GeneratedCars], CarsLeftToGenerate-1, CarId + 1).
+  generate_cars_on(UpdatedIntersection, lists:delete(Position, PossiblePositions), [Car | GeneratedCars], CarsLeftToGenerate-1, CarId + 1).
 
-draw_unoccupied_position(Intersection) ->
-  Lanes = intersection:get_incoming_lanes(Intersection),
-  RandomLane = lists:nth(random:uniform(length(Lanes)), Lanes),
-  LaneId = intersection:get_node_id(RandomLane),
-  PositionOnLane = random:uniform(intersection:get_node_length(LaneId, Intersection)) + 1,
-  RandomPosition = intersection:new_position(LaneId, PositionOnLane),
-  case intersection:get_cars_on(RandomPosition, Intersection) of
-    [] ->
-      RandomPosition;
-    _ ->
-      draw_unoccupied_position(Intersection)
-  end.
+draw_unoccupied_position(PossiblePositions) ->
+  lists:nth(random:uniform(length(PossiblePositions)), PossiblePositions).
 
 convert_steps(StepNo, MaxStepNo) when StepNo =< MaxStepNo ->
   InputFilename = "result/step" ++ integer_to_list(StepNo),
