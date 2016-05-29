@@ -39,12 +39,13 @@ recombination(S1, S2, #sim_params{problem_size = ProblemSize}) ->
 -spec mutation(solution(), sim_params()) -> solution().
 mutation(Solution, #sim_params{mutation_rate = MutRate, mutation_range = MutRan, problem_size = ProblemSize}) ->
   SemaphoreIds = maps:keys(lists:nth(1, Solution)),
-  Mutations = [random_mutation(Id, ProblemSize) || Id <-SemaphoreIds, random:uniform() < MutRate],
+  MaxMutationRange = round(ProblemSize * MutRan),
+  Mutations = [random_mutation(Id, ProblemSize, MaxMutationRange) || Id <-SemaphoreIds, random:uniform() < MutRate],
   mutate(Solution, Mutations).
 
-random_mutation(IdToMutate, ProblemSize) ->
+random_mutation(IdToMutate, ProblemSize, MaxMutationRange) ->
   StartTimeStep = random:uniform(ProblemSize),
-  EndTimeStep = min(ProblemSize, StartTimeStep + random:uniform(?MAX_MUTATION_RANGE) - 1),
+  EndTimeStep = min(ProblemSize, StartTimeStep + random:uniform(MaxMutationRange) - 1),
   {IdToMutate, StartTimeStep, EndTimeStep, random_trit()}.
 
 mutate(Solution, Mutations) ->
