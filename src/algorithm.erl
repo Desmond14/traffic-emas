@@ -42,9 +42,16 @@ new_velocity(Car, DistToCarAhead) ->
       NewVelocity = min(MaxVelocity, min(DistToCarAhead - 1, Velocity + MaxAcceleration));
     DistToCarAhead =< Velocity ->
       NewVelocity = max(0, max(DistToCarAhead - 1, Velocity - MaxDeceleration))
-%%      NewVelocity = max(0, DistToCarAhead - 1)
   end,
-  NewVelocity.
+  randomize(NewVelocity, Car).
+
+randomize(Velocity, Car) ->
+  case random:uniform() < car:get_randomization_chance(Car) of
+    true ->
+      max(Velocity-1, 0);
+    false ->
+      Velocity
+  end.
 
 %% @doc Decelerates car's velocity just enough to be able to stop before next car or red light
 %% in consecutive time steps. Returns updated car (or oustide_intersection atom) and intersection updated
@@ -53,12 +60,6 @@ new_velocity(Car, DistToCarAhead) ->
 decelerate_minimaly(Intersection, Car, Lights) ->
   DistToBlocker = car:calculate_dist_to_blocker(Intersection, Lights, Car),
   DecelerateBy = max(1, minimal_deceleration_to_stop_before(DistToBlocker, Car)),
-%%  case car:get_id(Car) of
-%%    33 ->
-%%      ct:pal("Decelerating by ~p~n", [DecelerateBy]);
-%%    _ ->
-%%      do_nothing
-%%  end,
   car:move_car(car:set_velocity(max(0, car:get_velocity(Car)-DecelerateBy), Car), Intersection).
 
 -spec minimal_deceleration_to_stop_before(non_neg_integer(), car()) -> non_neg_integer().
@@ -81,8 +82,6 @@ minimal_deceleration_to_stop_before(DistToBlocker, Car, DecelerateBy) ->
 -spec is_in_safe_distance_to_blocker(intersection(), car(), lights()) -> boolean().
 is_in_safe_distance_to_blocker(Intersection, Car, Lights) ->
   InitialVelocity = car:get_velocity(Car),
-%%  DistToBlockingSemaphore = car:calculate_dist_to_first_blocking_semaphore(Intersection, Car, Lights),
-%%  is_in_safe_distance_to_blocking_semaphore(InitialVelocity, DistToBlockingSemaphore).
   DistToBlocker = car:calculate_dist_to_blocker(Intersection, Lights, Car),
   MaximalNextVelocity = min(car:get_max_velocity(Car), InitialVelocity + car:get_max_acceleration(Car)),
   is_in_safe_distance_to_blocking_semaphore(MaximalNextVelocity, DistToBlocker-MaximalNextVelocity).

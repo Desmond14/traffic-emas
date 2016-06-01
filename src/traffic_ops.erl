@@ -2,7 +2,7 @@
 
 -behaviour(emas_genetic_ops).
 
--export ([evaluation/2, mutation/2, recombination/3, solution/1, config/0]).
+-export([evaluation/2, mutation/2, recombination/3, solution/1, config/0, config/1]).
 
 -include("model.hrl").
 -include_lib("emas/include/emas.hrl").
@@ -65,7 +65,11 @@ mutate_with(Gene, Idx, [{IdToMutate, StartTimeStep, EndTimeStep, Trit} | Tail]) 
 %% @doc Loads the data for which lights will be optimized
 -spec config() -> input().
 config() ->
-  {input:load("input.intersection", "input.cars"), false}.
+  {input:load("input.intersection", "input.cars", 0.0), false}.
+
+-spec config(float()) -> input().
+config(RandomizationChance) ->
+  {input:load("input.intersection", "input.cars", RandomizationChance), false}.
 
 %% =============================================================================
 %% Internal functions
@@ -74,30 +78,6 @@ config() ->
 -spec random_trit() -> trit().
 random_trit() ->
     random:uniform(3) - 1.
-
--spec mutate_gene(lights(), float()) -> lights().
-mutate_gene(Lights, MutationRange) ->
-  NodesToMutate = [NodeId || NodeId <- maps:keys(Lights), random:uniform() < MutationRange],
-  change_light(NodesToMutate, Lights).
-
-
--spec change_light([node_id()], lights()) -> lights().
-change_light([], Lights) ->
-  Lights;
-
-change_light([NodeId | Rest], Lights) ->
-  CurrentLight = maps:get(NodeId, Lights),
-  case CurrentLight of
-    1 ->
-      case random:uniform() < 0.5 of
-        true ->
-          change_light(Rest, maps:update(NodeId, 0, Lights));
-        false ->
-          change_light(Rest, maps:update(NodeId, 2, Lights))
-      end;
-    _ ->
-      change_light(Rest, maps:update(NodeId, 1, Lights))
-  end.
 
 -spec generate_solution(intersection(), pos_integer()) -> solution().
 generate_solution(Intersection, ProblemSize) ->

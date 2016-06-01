@@ -1,7 +1,7 @@
 %% @doc A module contains utility functions to operate on car data structure. All API functions should take car() type as a last argument.
 
 -module(car).
--export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2, get_max_velocity/1, get_max_acceleration/1, get_max_deceleration/1, move_car/2, set_velocity/2, set_config/2, get_id/1, calculate_dist_to_first_blocking_semaphore/3, calculate_dist_to_blocker/3, get_node_id/1, set_path_to_dest/2, new_car/5]).
+-export([get_velocity/1, get_position/1, get_path_to_dest/1, get_full_path/2, calculate_dist_to_car_ahead/2, get_max_velocity/1, get_max_acceleration/1, get_max_deceleration/1, move_car/2, set_velocity/2, set_config/2, get_id/1, calculate_dist_to_first_blocking_semaphore/3, calculate_dist_to_blocker/3, get_node_id/1, set_path_to_dest/2, new_car/5, set_randomization_chance/2, get_randomization_chance/1]).
 
 -include("model.hrl").
 
@@ -41,6 +41,10 @@ get_path_to_dest(Car) ->
 get_full_path(Intersection, Car) ->
   intersection:get_path_with_semaphores(get_node_id(Car), get_path_to_dest(Car), Intersection).
 
+-spec get_randomization_chance(car()) -> float().
+get_randomization_chance(Car) ->
+  maps:get(randomization_chance, Car).
+
 -spec set_velocity(non_neg_integer(), car()) -> car().
 set_velocity(Velocity, Car) ->
   maps:update(velocity, Velocity, Car).
@@ -52,6 +56,10 @@ set_config(Config, Car) ->
 -spec set_path_to_dest([node_id()], car()) -> car().
 set_path_to_dest(PathToDest, Car) ->
   maps:update(path_to_dest, PathToDest, Car).
+
+-spec set_randomization_chance(float(), car()) -> car().
+set_randomization_chance(RandomizationChance, Car) ->
+  maps:put(randomization_chance, RandomizationChance, Car).
 
 %% @doc Moves car to the next position on intersection. Returns tuple with car and intersection, both updated.
 -spec move_car(car(), intersection()) -> {optional_car(), intersection()}.

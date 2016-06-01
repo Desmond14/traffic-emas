@@ -1,14 +1,14 @@
 -module(input).
--export([load_intersection_definition/1, load_car_definitions/1, load/2]).
+-export([load_intersection_definition/1, load_car_definitions/1, load/3]).
 
 -include("model.hrl").
 
--spec load(string(), string()) -> input().
-load(IntersectionFilename, CarsFilename) ->
+-spec load(string(), string(), float()) -> input().
+load(IntersectionFilename, CarsFilename, RandomizationChance) ->
   Intersection = convert_to_map(load_intersection_definition(IntersectionFilename)),
   NormalizedIntersection = normalization:normalize_intersection(Intersection),
   Cars = convert_paths_to_full_paths(load_car_definitions(CarsFilename), NormalizedIntersection),
-  {add_cars_on(Cars, calculate_incoming_nodes(NormalizedIntersection)), Cars}.
+  {add_cars_on(Cars, calculate_incoming_nodes(NormalizedIntersection)), add_randomization_chance(Cars, RandomizationChance)}.
 
 load_intersection_definition(Filename) ->
   util:evaluate_file(Filename).
@@ -65,3 +65,13 @@ convert_one_car(InitialCars, ConvertedCars, Intersection) ->
   CarToConvert = hd(InitialCars),
   ConvertedCar = car:set_path_to_dest(car:get_full_path(Intersection, CarToConvert), CarToConvert),
   convert_one_car(tl(InitialCars), lists:append(ConvertedCars, [ConvertedCar]), Intersection).
+
+-spec add_randomization_chance([car()], float()) -> [car()].
+add_randomization_chance(Cars, RandomizationChance) ->
+  add_randomization_chance(Cars, [], RandomizationChance).
+
+add_randomization_chance([], Result, _RandomizationChance) ->
+  Result;
+
+add_randomization_chance([Car | Rest], Result, RandomizationChance) ->
+  add_randomization_chance(Rest, Result ++ [car:set_randomization_chance(RandomizationChance, Car)], RandomizationChance).
