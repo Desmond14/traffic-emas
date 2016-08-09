@@ -11,6 +11,11 @@ load2_test() ->
   ?assertEqual(length(Result), 4).
 
 should_calculate_incoming_nodes_test() ->
-  {Intersection, _} = input:load("basic2.intersection", "basic.cars"),
+  {Intersection, _} = input:load("basic2.intersection", "basic.cars", 0.0),
   ReferenceIntersection = input:load_intersection_definition("basic.intersection"),
   ?assertEqual(ReferenceIntersection, Intersection).
+
+test_test() ->
+  {Intersection, Cars} = input:load("input.intersection", "cars12.input", 0.0),
+
+  ct:pal("~p~n", [jsx:encode(Cars)]).

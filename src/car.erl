@@ -43,7 +43,7 @@ get_full_path(Intersection, Car) ->
 
 -spec get_randomization_chance(car()) -> float().
 get_randomization_chance(Car) ->
-  maps:get(randomization_chance, Car).
+  maps:get(randomization_chance, Car, 0.0).
 
 -spec set_velocity(non_neg_integer(), car()) -> car().
 set_velocity(Velocity, Car) ->

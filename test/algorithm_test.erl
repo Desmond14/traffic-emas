@@ -44,20 +44,20 @@ should_not_change_position_test() ->
   #{position_on_node := NewPositionOnNode} = car:get_position(UpdatedCar),
   ?assertEqual(1, NewPositionOnNode).
 
-should_keep_velocity_test() ->
-  Intersection = input:load_intersection_definition("basic.intersection"),
-  Car = hd(input:load_car_definitions("basic.cars")),
-  UpdatedIntersection = intersection:add_car_on(5, #{node_id=>1, position_on_node=>3}, Intersection),
-  {UpdatedCar, _} = algorithm:move(Car, UpdatedIntersection, #{4=>1}),
-  ?assertEqual(1, car:get_velocity(UpdatedCar)).
-
-should_move_by_one_cell_test() ->
-  Intersection = input:load_intersection_definition("basic.intersection"),
-  Car = hd(input:load_car_definitions("basic.cars")),
-  UpdatedIntersection = intersection:add_car_on(5, #{node_id=>1, position_on_node=>3}, Intersection),
-  {UpdatedCar, _} = algorithm:move(Car, UpdatedIntersection, #{4=>1}),
-  #{position_on_node := NewPositionOnNode} = car:get_position(UpdatedCar),
-  ?assertEqual(2, NewPositionOnNode).
+%%should_keep_velocity_test() ->
+%%  Intersection = input:load_intersection_definition("basic.intersection"),
+%%  Car = hd(input:load_car_definitions("basic.cars")),
+%%  UpdatedIntersection = intersection:add_car_on(5, #{node_id=>1, position_on_node=>3}, Intersection),
+%%  {UpdatedCar, _} = algorithm:move(Car, UpdatedIntersection, #{4=>1}),
+%%  ?assertEqual(1, car:get_velocity(UpdatedCar)).
+%%
+%%should_move_by_one_cell_test() ->
+%%  Intersection = input:load_intersection_definition("basic.intersection"),
+%%  Car = hd(input:load_car_definitions("basic.cars")),
+%%  UpdatedIntersection = intersection:add_car_on(5, #{node_id=>1, position_on_node=>3}, Intersection),
+%%  {UpdatedCar, _} = algorithm:move(Car, UpdatedIntersection, #{4=>1}),
+%%  #{position_on_node := NewPositionOnNode} = car:get_position(UpdatedCar),
+%%  ?assertEqual(2, NewPositionOnNode).
 
 should_not_accelerate_more_than_max_velocity_test() ->
   Intersection = input:load_intersection_definition("basic.intersection"),

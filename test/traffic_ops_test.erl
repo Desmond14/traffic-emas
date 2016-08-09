@@ -6,8 +6,8 @@
 should_mutate_test() ->
   SimParams = #sim_params{problem_size = 5, mutation_rate = 0.25},
   InitialSolution = traffic_ops:solution(SimParams),
-  ct:pal("~p~n", [InitialSolution]),
-  ct:pal("~p~n", [traffic_ops:mutation(InitialSolution, SimParams)]).
+  ct:pal("~p~n", [InitialSolution]).
+%%  ct:pal("~p~n", [traffic_ops:mutation(InitialSolution, SimParams)]).
 
 
 should_recombine_test() ->
