@@ -1,5 +1,5 @@
-InitialTime=10000
-MaxTime=30000
+InitialTime=5000
+MaxTime=5000
 TimeStep=10000
 ProblemSize=20
 Iterations=5
