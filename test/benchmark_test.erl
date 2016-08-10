@@ -2,25 +2,30 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
-does_not_moves_car_on_position_one_test() ->
-  Intersection = input:load_intersection_definition("basic.intersection"),
-  Car = hd(input:load_car_definitions("basic.cars")),
-  {UpdatedIntersection, [UpdatedCar|Cars]} = benchmark:bias_input({Intersection, [Car]}, 1.0, 5),
-  ?assertEqual(1, car:get_position_on_node(UpdatedCar)).
-
-moves_back_by_four_test() ->
-  Intersection = input:load_intersection_definition("test/bias/test2.intersection"),
-  Car5 = #{id=>5, position=>#{node_id=>2, position_on_node=>5}, velocity=>1, path_to_dest=>[11]},
-  {UpdatedIntersection, [UpdatedCar|Cars]} = benchmark:bias_input({Intersection, [Car5]}, 1.0, 4),
-  ?assertEqual(1, car:get_position_on_node(UpdatedCar)),
-  CarsOn = intersection:get_cars_on(#{position_on_node=>1, node_id=>2}, UpdatedIntersection),
-  ?assertEqual(5, hd(CarsOn)).
-
-does_not_moves_car_back_on_other_car_test() ->
-  Intersection = input:load_intersection_definition("test/bias/test1.intersection"),
-  Car5 = #{id=>5, position=>#{node_id=>1, position_on_node=>4}, velocity=>1, path_to_dest=>[11]},
-  {UpdatedIntersection, [UpdatedCar|Cars]} = benchmark:bias_input({Intersection, [Car5]}, 1.0, 10),
-  ?assertEqual(2, car:get_position_on_node(UpdatedCar)),
-  CarsOn = intersection:get_cars_on(#{position_on_node=>2, node_id=>1}, UpdatedIntersection),
-  ?assertEqual(5, hd(CarsOn)).
-
+debug_test() ->
+  Options = [{time,18000},
+    {genetic_ops,traffic_ops},
+    {model,mas_sequential},
+    {problem_size,5},
+    {mutation_rate,0.2},
+    {mutation_range,0.2},
+    {initial_energy,10},
+    {reproduction_threshold,11},
+    {reproduction_transfer,5},
+    {fight_transfer,10},
+    {mutation_chance,0.75},
+    {recombination_chance,0.3},
+    {fight_number,2},
+    {topology,mesh},
+    {migration_probability,0.0001},
+    {log_dir,standard_io},
+    {islands,4},
+    {population_size,100},
+    {write_interval,1000},
+    {arena_timeout,3000},
+    {skel_workers,4},
+    {skel_split_size,20},
+    {skel_pull,enable},
+    {cars_number,5},
+    {randomization_chance,0.001}],
+  benchmark:test(18000, 5, 5, 0.001, Options).

@@ -48,6 +48,7 @@ new_velocity(Car, DistToCarAhead) ->
 randomize(Velocity, Car) ->
   case random:uniform() < car:get_randomization_chance(Car) of
     true ->
+      ct:pal("Car ~p biased by randomization~n", [Car]),
       max(Velocity-1, 0);
     false ->
       Velocity

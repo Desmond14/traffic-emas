@@ -1,5 +1,5 @@
 -module(input).
--export([load_intersection_definition/1, load_car_definitions/1, load/3]).
+-export([load_intersection_definition/1, load_car_definitions/1, load/3, add_randomization_chance/2, normalize_input/1, convert_to_map/1, convert_paths_to_full_paths/2]).
 
 -include("model.hrl").
 
@@ -9,6 +9,11 @@ load(IntersectionFilename, CarsFilename, RandomizationChance) ->
   NormalizedIntersection = normalization:normalize_intersection(Intersection),
   Cars = convert_paths_to_full_paths(load_car_definitions(CarsFilename), NormalizedIntersection),
   {add_cars_on(Cars, calculate_incoming_nodes(NormalizedIntersection)), add_randomization_chance(Cars, RandomizationChance)}.
+
+normalize_input({Intersection, Cars}) ->
+  NormalizedIntersection = normalization:normalize_intersection(Intersection),
+  NormalizedCars = convert_paths_to_full_paths(Cars, NormalizedIntersection),
+  {calculate_incoming_nodes(NormalizedIntersection), NormalizedCars}.
 
 load_intersection_definition(Filename) ->
   util:evaluate_file(Filename).

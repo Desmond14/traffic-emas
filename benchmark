@@ -6,13 +6,15 @@
 main(Args) ->
     add_deps(),
     Options = get_options(Args),
+    ProblemSize = get_problem_size(Options),
     Time = get_time(Options),
-    {Solution, Fitness, Energy} = emas:start(Time, Options),
-    file:write_file("result.txt", integer_to_list(round(Fitness)), [append]),
-    Result = benchmark:evaluate(Solution, 100, 0.005),
-    io:format("Benchmark result: ~p\n", [Result]),
-    file:write_file("benchmark.txt", io_lib:fwrite("~p.\n", [Result]), [append]),
-    {Solution, Fitness, Energy}.
+    CarsNumber = get_option(Options, cars_number),
+    RandomizationChance = get_option(Options, randomization_chance),
+    FitnessRatio = benchmark:test(Time, ProblemSize, CarsNumber, RandomizationChance, Options),
+    %%file:write_file("result.txt", integer_to_list(round(Fitness)), [append]),
+    io:format("Benchmark result: ~p\n", [FitnessRatio]),
+    file:write_file("benchmark.txt", io_lib:fwrite("~p.\n", [FitnessRatio]), [append]),
+    ok.
 
 
 add_deps() ->
@@ -55,9 +57,26 @@ get_time(Options) ->
             Time
     end.
 
+get_problem_size(Options) ->
+    case proplists:get_value(problem_size, Options) of
+        undefined ->
+            usage(),
+            erlang:exit("Missing time argument");
+        ProblemSize ->
+            ProblemSize
+    end.
+
+get_option(Options, OptionName) ->
+    case proplists:get_value(OptionName, Options) of
+            undefined ->
+                usage(),
+                erlang:exit("Missing argument");
+            Option ->
+                Option
+        end.
 
 options_spec() ->
-    Specs = emas_config:options_specs(),
+    Specs = emas_config:options_specs() ++ [{cars_number, undefined,"cars_number",{integer, 5},"Number of cars to evaluate"}, {randomization_chance, undefined, "randomization_chance", {float, 0.001}, "Randomization chance"}],
     add_time(Specs).
 
 usage() ->

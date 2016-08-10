@@ -44,3 +44,6 @@ generate_cars_test() ->
   {Intersection, _Cars} = input:load("input.intersection", "input.cars", 0.0),
   {_UpdatedIntersection, Cars} = util:generate_cars_on(Intersection, {cars_number, 12}),
   ct:pal("~p~n", [Cars]).
+
+generate_simple_lights_test() ->
+  ct:pal("~p,~n", [util:generate_simple_lights(250, 20)]).

@@ -1,5 +1,5 @@
 -module(util).
--export([evaluate_file/1, generate_cars_on/2, convert_to_jsons/1]).
+-export([evaluate_file/1, generate_cars_on/2, convert_to_jsons/1, generate_simple_lights/2]).
 
 -include("model.hrl").
 
@@ -16,7 +16,7 @@ evaluate_file(Filename) ->
   {value,Value,_}=erl_eval:exprs(ErlAbsForm, erl_eval:new_bindings()),
   Value.
 
--spec generate_cars_on(intersection(), tuple()) -> [car()].
+-spec generate_cars_on(intersection(), tuple()) -> input().
 generate_cars_on(Intersection, {coverage, LanesCoverage}) ->
   CarsToGenerate = round(LanesCoverage * intersection:calculate_lanes_capacity(intersection:get_incoming_lanes(Intersection))),
   generate_cars_on(Intersection, CarsToGenerate, ?FIRST_CAR_ID);
@@ -84,3 +84,13 @@ convert_solution() ->
   InputFilename = "result/solution",
   OutputFilename =  "result/solution.json",
   file:write_file(OutputFilename, jsx:encode([util:evaluate_file(InputFilename)])).
+
+generate_simple_lights(Times, ProblemSize) ->
+  {{Intersection, _}, _} = traffic_ops:config(),
+  generate_simple_lights(Times, ProblemSize, Intersection, []).
+
+generate_simple_lights(0, _ProblemSize, _Intersection, Result) ->
+  Result;
+
+generate_simple_lights(Times, ProblemSize, Intersection, Result) ->
+  generate_simple_lights(Times-1, ProblemSize, Intersection, Result ++ [traffic_ops:generate_solution(Intersection, ProblemSize)]).
