@@ -6,14 +6,8 @@
 main(Args) ->
     add_deps(),
     Options = get_options(Args),
-    ProblemSize = get_problem_size(Options),
-    Time = get_time(Options),
-    CarsNumber = get_option(Options, cars_number),
-    RandomizationChance = get_option(Options, randomization_chance),
-    FitnessRatio = benchmark:test(Time, ProblemSize, CarsNumber, RandomizationChance, Options),
+    benchmark:run_tests(Options),
     %%file:write_file("result.txt", integer_to_list(round(Fitness)), [append]),
-    io:format("Benchmark result: ~p\n", [FitnessRatio]),
-    file:write_file("benchmark.txt", io_lib:fwrite("~p.\n", [FitnessRatio]), [append]),
     ok.
 
 
@@ -48,35 +42,8 @@ time_spec() ->
     {time, $t, "time", integer,
      "amount of time to run given simulaiton, in milliseconds"}.
 
-get_time(Options) ->
-    case proplists:get_value(time, Options) of
-        undefined ->
-            usage(),
-            erlang:exit("Missing time argument");
-        Time ->
-            Time
-    end.
-
-get_problem_size(Options) ->
-    case proplists:get_value(problem_size, Options) of
-        undefined ->
-            usage(),
-            erlang:exit("Missing time argument");
-        ProblemSize ->
-            ProblemSize
-    end.
-
-get_option(Options, OptionName) ->
-    case proplists:get_value(OptionName, Options) of
-            undefined ->
-                usage(),
-                erlang:exit("Missing argument");
-            Option ->
-                Option
-        end.
-
 options_spec() ->
-    Specs = emas_config:options_specs() ++ [{cars_number, undefined,"cars_number",{integer, 5},"Number of cars to evaluate"}, {randomization_chance, undefined, "randomization_chance", {float, 0.001}, "Randomization chance"}],
+    Specs = emas_config:options_specs() ++ [{cars_number, undefined,"cars_number",{integer, 5},"Number of cars to evaluate"}, {randomization_chance, undefined, "randomization_chance", {float, 0.001}, "Randomization chance"}, {repetitions, undefined,"repetitions",{integer, 10},"Number of times to repeat tests"}],
     add_time(Specs).
 
 usage() ->

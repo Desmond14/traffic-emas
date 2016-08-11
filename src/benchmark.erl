@@ -1,9 +1,36 @@
 -module(benchmark).
--export([test/5]).
+-export([run_tests/1]).
 
 -include("model.hrl").
 
-test(Time, ProblemSize, CarsNumber, RandomizationChance, Options) ->
+run_tests(Options) ->
+  Time = get_option(Options, time),
+  ProblemSize = get_option(Options, problem_size),
+  CarsNumber = get_option(Options, cars_number),
+  file:write_file("result.txt", io_lib:fwrite("~p\t",[CarsNumber]), [append]),
+  RandomizationChance = get_option(Options, randomization_chance),
+  Repetitions = get_option(Options, repetitions),
+  SimpleLightsSolutions = util:evaluate_file("simple_solutions.txt"),
+  run_tests(Time, ProblemSize, CarsNumber, RandomizationChance, Options, SimpleLightsSolutions, Repetitions, []),
+  file:write_file("result.txt", io_lib:fwrite("\n",[]), [append]).
+
+run_tests(_Time, _ProblemSize, _CarsNumber, _RandomizationChance, _Options, _SimpleLightsSolutions, 0, Result) ->
+  Result;
+
+run_tests(Time, ProblemSize, CarsNumber, RandomizationChance, Options, SimpleLightsSolutions, Repetitions, Result) ->
+  FitnessRatio = test(Time, ProblemSize, CarsNumber, RandomizationChance, Options, SimpleLightsSolutions),
+  file:write_file("result.txt", io_lib:fwrite("~.3f\t",[FitnessRatio]), [append]),
+  run_tests(Time, ProblemSize, CarsNumber, RandomizationChance, Options, SimpleLightsSolutions, Repetitions-1, Result ++ []).
+
+get_option(Options, OptionName) ->
+  case proplists:get_value(OptionName, Options) of
+    undefined ->
+      erlang:exit("Missing argument");
+    Option ->
+      Option
+  end.
+
+test(Time, ProblemSize, CarsNumber, RandomizationChance, Options, SimpleLightsSolutions) ->
   random:seed(erlang:now()),
   Intersection = normalization:normalize_intersection(input:convert_to_map(input:load_intersection_definition("input.intersection"))),
   InitialInput = util:generate_cars_on(Intersection, {cars_number, CarsNumber}),
@@ -14,7 +41,7 @@ test(Time, ProblemSize, CarsNumber, RandomizationChance, Options) ->
   {BestSolution, BestFitness} = find_best_matching_solution(Solutions, BiasedInput, {nil, -10000.0}),
   OptimizedFitness = evaluation_multilane:evaluate_solution(BestSolution, {BiasedIntersection, input:add_randomization_chance(BiasedCars, RandomizationChance)}, false),
   io:format("Trying simple lights~n", []),
-  {_, SimpleLightsFitness} = find_best_matching_solution(util:evaluate_file("simple_solutions.txt"), {BiasedIntersection, BiasedCars}, {nil, -10000.0}),
+  {_, SimpleLightsFitness} = find_best_matching_solution(SimpleLightsSolutions, {BiasedIntersection, BiasedCars}, {nil, -10000.0}),
   io:format("Optimized fitness: ~p, Simple lights fitness: ~p, Best fitness without bias: ~p", [OptimizedFitness, SimpleLightsFitness, BestFitness]),
   SimpleLightsFitness / BestFitness.
 
@@ -43,7 +70,7 @@ prepare_and_evaluate_variants(_InitialInput, _RandomizationChance, 0, _ProblemSi
 
 prepare_and_evaluate_variants(InitialInput, RandomizationChance, VariantsLeft, ProblemSize, Time, Options, Result) ->
   BiasedInput = bias:bias_input(InitialInput, RandomizationChance, ProblemSize),
-  {Intersection, Cars} = BiasedInput,
+  {_Intersection, Cars} = BiasedInput,
   file:write_file("priv/input.cars", io_lib:fwrite("~p.\n", [denormalize(Cars)])),
   {Solution, Fitness, _Energy} = emas:start(Time, Options),
   io:format("Wyliczony fitness: ~p\n", [Fitness]),
