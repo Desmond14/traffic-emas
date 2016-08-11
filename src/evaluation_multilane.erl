@@ -1,43 +1,59 @@
 -module(evaluation_multilane).
--export([evaluate_solution/3]).
+-export([evaluate_solution/4]).
 
 -include("model.hrl").
 
 -type gene() :: #{node_id()=>trit()}.
 -type solution() :: [gene()].
 
--spec evaluate_solution(solution(), input(), boolean()) -> float().
-evaluate_solution(Solution, {Intersection, Cars}, true) ->
+%%-spec evaluate_solution(solution(), input(), boolean()) -> float().
+evaluate_solution(Solution, {Intersection, Cars}, true, ProblemSize) ->
   save_solution(Solution),
   save_cars(Cars, integer_to_list(length(Solution))),
-  time_loop(Solution, {Intersection, Cars}, ?INITIAL_FITNESS, true);
+  time_loop(Solution, {Intersection, Cars}, ?INITIAL_FITNESS, true, ProblemSize);
 
-evaluate_solution(Solution, Data, false) ->
-  time_loop(Solution, Data, ?INITIAL_FITNESS, false).
+evaluate_solution(Solution, Data, false, ProblemSize) ->
+  time_loop(Solution, Data, ?INITIAL_FITNESS, false, ProblemSize).
 
 %% =============================================================================
 %% Internal functions
 %% =============================================================================
 
 %% @doc Main loop which iterates through the solution genes
--spec time_loop(solution(), input(), float(), boolean()) -> float().
-time_loop([], _, Result, _SaveSimulationCourse) ->
+%%-spec time_loop(solution(), input(), float(), boolean()) -> float().
+time_loop([], _, Result, _SaveSimulationCourse, _ProblemSize) ->
   Result;
 
-time_loop([Lights | Solution], Data, Result, SaveSimulationCourse) ->
+time_loop([Lights | Solution], Data, Result, SaveSimulationCourse, ProblemSize) ->
   {UpdatedIntersection, UpdatedCars} = move_cars(Lights, Data),
-  Penalty = count_cars_not_on_dest_lane(UpdatedCars),
+  Penalty = count_cars_not_on_dest_lane(UpdatedCars)*math:pow(1.73, ProblemSize-length(Solution)),
   case SaveSimulationCourse of
     true ->
-      save_cars(UpdatedCars, integer_to_list(length(Solution)));
+      io:format("Penalty: ~p~n", [Penalty]),
+      case round(Penalty) of
+        0 ->
+          file:write_file("timetoleave.txt", io_lib:fwrite("~p\t", [20-length(Solution)]), [append]),
+          case collision:collision_occured(Data, UpdatedCars) of
+            true ->
+              -500000 * (length(Solution) + 1);
+            false ->
+              time_loop(Solution, {UpdatedIntersection, UpdatedCars}, Result - Penalty, false, ProblemSize)
+          end;
+        _ ->
+          case collision:collision_occured(Data, UpdatedCars) of
+            true ->
+              -500000 * (length(Solution) + 1);
+            false ->
+              time_loop(Solution, {UpdatedIntersection, UpdatedCars}, Result - Penalty, SaveSimulationCourse, ProblemSize)
+          end
+      end;
     false ->
-      ok
-  end,
-  case collision:collision_occured(Data, UpdatedCars) of
-    true ->
-      -1000 * (length(Solution) + 1);
-    false ->
-      time_loop(Solution, {UpdatedIntersection, UpdatedCars}, Result - Penalty, SaveSimulationCourse)
+      case collision:collision_occured(Data, UpdatedCars) of
+        true ->
+          -500000 * (length(Solution) + 1);
+        false ->
+          time_loop(Solution, {UpdatedIntersection, UpdatedCars}, Result - Penalty, SaveSimulationCourse, ProblemSize)
+      end
   end.
 
 save_cars(Cars, Step) ->

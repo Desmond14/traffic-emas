@@ -8,8 +8,10 @@ main(Args) ->
     Options = get_options(Args),
     Time = get_time(Options),
     {Solution, Fitness, Energy} = emas:start(Time, Options),
-    file:write_file("result.txt", integer_to_list(round(Fitness)), [append]),
-    io:format("~p~n", [Solution]),
+    {Input, _} = traffic_ops:config(),
+    evaluation_multilane:evaluate_solution(Solution, Input, true, length(Solution)),
+    %%file:write_file("result.txt", integer_to_list(round(Fitness)), [append]),
+    io:format("Fitness: ~p~n", [Fitness]),
     {Solution, Fitness, Energy}.
 
 

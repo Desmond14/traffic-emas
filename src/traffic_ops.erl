@@ -24,7 +24,7 @@ solution(#sim_params{problem_size = ProblemSize}) ->
 -spec evaluation(solution(), sim_params()) -> float().
 evaluation(Solution, #sim_params{extra = Input}) ->
     {Data, SaveSimulationCourse} = Input,
-    Fitness = evaluation_multilane:evaluate_solution(Solution, Data, SaveSimulationCourse),
+    Fitness = evaluation_multilane:evaluate_solution(Solution, Data, SaveSimulationCourse, length(Solution)),
     float(Fitness).
 
 %% @doc Crossover recombination in a random point
